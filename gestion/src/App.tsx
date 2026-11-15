@@ -1,8 +1,68 @@
+
 import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
+import {
+  LayoutDashboard,
+  ShoppingBag,
+  Users,
+  BriefcaseBusiness,
+  CreditCard,
+  Receipt,
+  Settings,
+  LogOut,
+  LockKeyhole,
+  Leaf,
+  RefreshCw,
+  Menu,
+  X,
+} from "lucide-react";
 import { supabase } from "./lib/supabase";
-import { LockKeyhole, LogOut, Leaf } from "lucide-react";
+
+type Section =
+  | "dashboard"
+  | "orders"
+  | "clients"
+  | "services"
+  | "payments"
+  | "expenses"
+  | "settings";
+
+type Stats = {
+  orders: number | null;
+  clients: number | null;
+  services: number | null;
+  payments: number | null;
+  expenses: number | null;
+};
+
+const initialStats: Stats = {
+  orders: null,
+  clients: null,
+  services: null,
+  payments: null,
+  expenses: null,
+};
+
+const menu = [
+  { id: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
+  { id: "orders", label: "Commandes", icon: ShoppingBag },
+  { id: "clients", label: "Clients", icon: Users },
+  { id: "services", label: "Services", icon: BriefcaseBusiness },
+  { id: "payments", label: "Paiements", icon: CreditCard },
+  { id: "expenses", label: "Dépenses", icon: Receipt },
+  { id: "settings", label: "Paramètres", icon: Settings },
+] as const;
+
+const titles: Record<Section, string> = {
+  dashboard: "Tableau de bord",
+  orders: "Gestion des commandes",
+  clients: "Gestion des clients",
+  services: "Gestion des services",
+  payments: "Gestion des paiements",
+  expenses: "Gestion des dépenses",
+  settings: "Paramètres",
+};
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -11,6 +71,9 @@ export default function App() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
+  const [section, setSection] = useState<Section>("dashboard");
+  const [stats, setStats] = useState<Stats>(initialStats);
+  const [mobileMenu, setMobileMenu] = useState(false);
 
   async function verifyAdmin() {
     const { data, error } = await supabase.rpc("is_baobab_admin");
@@ -25,6 +88,30 @@ export default function App() {
     setMessage("");
   }
 
+  async function loadStats() {
+    const tables = [
+      "ordres",
+      "clients",
+      "services",
+      "paiements",
+      "depenses",
+    ] as const;
+
+    const results = await Promise.all(
+      tables.map((table) =>
+        supabase.from(table).select("*", { count: "exact", head: true })
+      )
+    );
+
+    setStats({
+      orders: results[0].error ? null : results[0].count,
+      clients: results[1].error ? null : results[1].count,
+      services: results[2].error ? null : results[2].count,
+      payments: results[3].error ? null : results[3].count,
+      expenses: results[4].error ? null : results[4].count,
+    });
+  }
+
   useEffect(() => {
     let mounted = true;
 
@@ -37,6 +124,7 @@ export default function App() {
 
       if (data.session) {
         await verifyAdmin();
+        if (mounted) await loadStats();
       }
 
       if (mounted) setLoading(false);
@@ -72,13 +160,16 @@ export default function App() {
     });
 
     if (error) {
-  setMessage(error.message);
-  setLoading(false);
-  return;
-}
+      setMessage(error.message);
+      setLoading(false);
+      return;
+    }
 
     setSession(data.session);
     await verifyAdmin();
+
+    if (data.session) await loadStats();
+
     setLoading(false);
   }
 
@@ -89,6 +180,11 @@ export default function App() {
     setPassword("");
   }
 
+  function chooseSection(id: Section) {
+    setSection(id);
+    setMobileMenu(false);
+  }
+
   if (loading) {
     return <div className="loading">Chargement de BAOBAB DIGITAL...</div>;
   }
@@ -97,10 +193,7 @@ export default function App() {
     return (
       <main className="login-page">
         <section className="login-card">
-          <div className="brand-icon">
-            <Leaf size={34} />
-          </div>
-
+          <div className="brand-icon"><Leaf size={34} /></div>
           <h1>BAOBAB DIGITAL</h1>
           <p className="subtitle">Espace de gestion sécurisé</p>
 
@@ -140,29 +233,125 @@ export default function App() {
     );
   }
 
+  const cards = [
+    { label: "Commandes", value: stats.orders, icon: ShoppingBag },
+    { label: "Clients", value: stats.clients, icon: Users },
+    { label: "Services actifs", value: stats.services, icon: BriefcaseBusiness },
+    { label: "Paiements", value: stats.payments, icon: CreditCard },
+    { label: "Dépenses", value: stats.expenses, icon: Receipt },
+  ];
+
   return (
-    <main className="dashboard">
-      <header className="dashboard-header">
-        <div>
-          <h1>BAOBAB DIGITAL</h1>
-          <p>Espace de gestion</p>
+    <main className="admin-layout">
+      <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
+        <div className="sidebar-brand">
+          <Leaf size={30} />
+          <div>
+            <strong>BAOBAB DIGITAL</strong>
+            <span>Gestion</span>
+          </div>
+          <button className="close-menu" onClick={() => setMobileMenu(false)}>
+            <X size={22} />
+          </button>
         </div>
 
-        <button className="logout-button" onClick={handleLogout}>
-          <LogOut size={18} />
+        <nav className="side-nav">
+          {menu.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                className={section === item.id ? "nav-item active" : "nav-item"}
+                onClick={() => chooseSection(item.id)}
+              >
+                <Icon size={19} />
+                <span>{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+
+        <button className="sidebar-logout" onClick={handleLogout}>
+          <LogOut size={19} />
           Déconnexion
         </button>
-      </header>
+      </aside>
 
-      <section className="welcome-card">
-        <Leaf size={32} />
-        <h2>Bienvenue dans ton espace de gestion !</h2>
-        <p>Ton accès administrateur est confirmé.</p>
+      {mobileMenu && (
+        <button
+          className="menu-overlay"
+          aria-label="Fermer le menu"
+          onClick={() => setMobileMenu(false)}
+        />
+      )}
+
+      <section className="main-area">
+        <header className="topbar">
+          <button
+            className="menu-toggle"
+            onClick={() => setMobileMenu(true)}
+            aria-label="Ouvrir le menu"
+          >
+            <Menu size={23} />
+          </button>
+          <div>
+            <h1>{titles[section]}</h1>
+            <p>Le numérique à votre portée.</p>
+          </div>
+          <button className="refresh-button" onClick={loadStats}>
+            <RefreshCw size={17} />
+            <span>Actualiser</span>
+          </button>
+        </header>
+
+        {section === "dashboard" ? (
+          <div className="dashboard-content">
+            <div className="welcome-card">
+              <div>
+                <span>ESPACE ADMINISTRATEUR</span>
+                <h2>Bienvenue dans BAOBAB DIGITAL !</h2>
+                <p>Voici un aperçu de ton activité.</p>
+              </div>
+              <Leaf size={48} />
+            </div>
+
+            <h2 className="section-heading">Vue d'ensemble</h2>
+
+            <div className="stats-grid">
+              {cards.map((card) => {
+                const Icon = card.icon;
+                return (
+                  <article className="stat-card" key={card.label}>
+                    <div className="stat-icon"><Icon size={22} /></div>
+                    <div>
+                      <p>{card.label}</p>
+                      <strong>{card.value === null ? "—" : card.value}</strong>
+                    </div>
+                  </article>
+                );
+              })}
+            </div>
+
+            <div className="dashboard-note">
+              <h3>Ton espace de travail</h3>
+              <p>
+                Utilise le menu pour accéder aux différentes parties de
+                ton activité. Les fonctionnalités seront ajoutées
+                progressivement.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="section-placeholder">
+            <div className="placeholder-icon"><Leaf size={32} /></div>
+            <h2>{titles[section]}</h2>
+            <p>
+              Cette rubrique sera construite et connectée à Supabase
+              dans la prochaine étape.
+            </p>
+          </div>
+        )}
       </section>
-
-      <p className="coming-soon">
-        Le tableau de bord sera construit progressivement.
-      </p>
     </main>
   );
 }
