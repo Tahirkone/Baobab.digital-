@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
-import { LockKeyhole, LogOut, Leaf, LoaderCircle } from "lucide-react";
+import { LockKeyhole, LogOut, Leaf } from "lucide-react";
 
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
