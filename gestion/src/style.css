@@ -465,6 +465,49 @@ button {
   }
 }
 
+/* GRAND BAOBAB DU TABLEAU DE BORD */
+
+.welcome-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.welcome-content {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.welcome-content > div:first-child {
+  flex: 1;
+  min-width: 0;
+}
+
+.welcome-content h2 {
+  line-height: 1.5;
+}
+
+.baobab-tree {
+  width: 150px;
+  height: 150px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 500px) {
+  .baobab-tree {
+    width: 85px;
+    height: 85px;
+  }
+
+  .welcome-card {
+    padding: 20px;
+  }
+}
+
 /* CORRECTION DES TEXTES ET DES ESPACEMENTS */
 
 .topbar {
