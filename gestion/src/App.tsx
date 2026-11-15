@@ -320,13 +320,43 @@ export default function App() {
         {section === "dashboard" ? (
           <div className="dashboard-content">
             <div className="welcome-card">
-              <div>
-                <span>ESPACE ADMINISTRATEUR</span>
-                <h2>Bienvenue dans BAOBAB DIGITAL !</h2>
-                <p>Voici un aperçu de ton activité.</p>
-              </div>
-              <Leaf size={48} />
-            </div>
+              
+<div className="welcome-content">
+  <div>
+    <span>ESPACE ADMINISTRATEUR</span>
+    <h2>Bienvenue dans BAOBAB DIGITAL !</h2>
+    <p>Voici un aperçu de ton activité.</p>
+  </div>
+
+  <svg
+    className="baobab-tree"
+    viewBox="0 0 180 180"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <path
+      d="M78 145 L84 85 L72 63 L91 76 L105 55 L101 84 L112 145 Z"
+      fill="#D6AE51"
+    />
+    <path
+      d="M89 80 C65 75 50 61 39 42 M96 78 C112 66 126 51 140 32 M86 75 C77 54 77 36 80 20 M101 75 C104 50 99 34 95 18"
+      stroke="#D6AE51"
+      strokeWidth="8"
+      strokeLinecap="round"
+    />
+    <path
+      d="M32 48 C12 38 21 14 44 18 C48 -1 77 2 82 17 C100 -1 127 8 124 25 C148 11 169 29 157 46 C174 65 150 78 131 68 C114 86 91 76 85 68 C64 84 39 72 32 48Z"
+      fill="#E8C56E"
+    />
+    <path
+      d="M45 145 Q90 135 135 145"
+      stroke="#E8C56E"
+      strokeWidth="5"
+      strokeLinecap="round"
+    />
+  </svg>
+</div>
+
 
             <h2 className="section-heading">Vue d'ensemble</h2>
 
