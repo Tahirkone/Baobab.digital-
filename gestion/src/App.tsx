@@ -244,7 +244,20 @@ export default function App() {
   return (
     <main className="admin-layout">
       <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
-        <div className="sidebar-brand">
+        
+<div className="sidebar-brand">
+  <div className="brand-logo">
+    <Leaf size={32} />
+  </div>
+  <div className="brand-name">
+    <strong>BAOBAB DIGITAL</strong>
+    <span>Gestion</span>
+  </div>
+  <button className="close-menu" onClick={() => setMobileMenu(false)}>
+    <X size={22} />
+  </button>
+</div>
+
           <Leaf size={30} />
           <div>
             <strong>BAOBAB DIGITAL</strong>
