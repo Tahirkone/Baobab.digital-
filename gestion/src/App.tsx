@@ -72,10 +72,10 @@ export default function App() {
     });
 
     if (error) {
-      setMessage("Adresse e-mail ou mot de passe incorrect.");
-      setLoading(false);
-      return;
-    }
+  setMessage(error.message);
+  setLoading(false);
+  return;
+}
 
     setSession(data.session);
     await verifyAdmin();
