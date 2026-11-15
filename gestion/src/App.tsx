@@ -193,7 +193,9 @@ export default function App() {
     return (
       <main className="login-page">
         <section className="login-card">
-          <div className="brand-icon"><Leaf size={34} /></div>
+          <div className="brand-icon">
+            <Leaf size={34} />
+          </div>
           <h1>BAOBAB DIGITAL</h1>
           <p className="subtitle">Espace de gestion sécurisé</p>
 
@@ -244,26 +246,18 @@ export default function App() {
   return (
     <main className="admin-layout">
       <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
-        
-<div className="sidebar-brand">
-  <div className="brand-logo">
-    <Leaf size={32} />
-  </div>
-  <div className="brand-name">
-    <strong>BAOBAB DIGITAL</strong>
-    <span>Gestion</span>
-  </div>
-  <button className="close-menu" onClick={() => setMobileMenu(false)}>
-    <X size={22} />
-  </button>
-</div>
-
-          <Leaf size={30} />
-          <div>
+        <div className="sidebar-brand">
+          <div className="brand-logo">
+            <Leaf size={32} />
+          </div>
+          <div className="brand-name">
             <strong>BAOBAB DIGITAL</strong>
             <span>Gestion</span>
           </div>
-          <button className="close-menu" onClick={() => setMobileMenu(false)}>
+          <button
+            className="close-menu"
+            onClick={() => setMobileMenu(false)}
+          >
             <X size={22} />
           </button>
         </div>
@@ -307,10 +301,12 @@ export default function App() {
           >
             <Menu size={23} />
           </button>
+
           <div>
             <h1>{titles[section]}</h1>
             <p>Le numérique à votre portée.</p>
           </div>
+
           <button className="refresh-button" onClick={loadStats}>
             <RefreshCw size={17} />
             <span>Actualiser</span>
@@ -320,43 +316,42 @@ export default function App() {
         {section === "dashboard" ? (
           <div className="dashboard-content">
             <div className="welcome-card">
-              
-<div className="welcome-content">
-  <div>
-    <span>ESPACE ADMINISTRATEUR</span>
-    <h2>Bienvenue dans BAOBAB DIGITAL !</h2>
-    <p>Voici un aperçu de ton activité.</p>
-  </div>
+              <div className="welcome-content">
+                <div>
+                  <span>ESPACE ADMINISTRATEUR</span>
+                  <h2>Bienvenue dans BAOBAB DIGITAL !</h2>
+                  <p>Voici un aperçu de ton activité.</p>
+                </div>
 
-  <svg
-    className="baobab-tree"
-    viewBox="0 0 180 180"
-    fill="none"
-    xmlns="http://www.w3.org/2000/svg"
-  >
-    <path
-      d="M78 145 L84 85 L72 63 L91 76 L105 55 L101 84 L112 145 Z"
-      fill="#D6AE51"
-    />
-    <path
-      d="M89 80 C65 75 50 61 39 42 M96 78 C112 66 126 51 140 32 M86 75 C77 54 77 36 80 20 M101 75 C104 50 99 34 95 18"
-      stroke="#D6AE51"
-      strokeWidth="8"
-      strokeLinecap="round"
-    />
-    <path
-      d="M32 48 C12 38 21 14 44 18 C48 -1 77 2 82 17 C100 -1 127 8 124 25 C148 11 169 29 157 46 C174 65 150 78 131 68 C114 86 91 76 85 68 C64 84 39 72 32 48Z"
-      fill="#E8C56E"
-    />
-    <path
-      d="M45 145 Q90 135 135 145"
-      stroke="#E8C56E"
-      strokeWidth="5"
-      strokeLinecap="round"
-    />
-  </svg>
-</div>
-
+                <svg
+                  className="baobab-tree"
+                  viewBox="0 0 180 180"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M78 145 L84 85 L72 63 L91 76 L105 55 L101 84 L112 145 Z"
+                    fill="#D6AE51"
+                  />
+                  <path
+                    d="M89 80 C65 75 50 61 39 42 M96 78 C112 66 126 51 140 32 M86 75 C77 54 77 36 80 20 M101 75 C104 50 99 34 95 18"
+                    stroke="#D6AE51"
+                    strokeWidth="8"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M32 48 C12 38 21 14 44 18 C48 -1 77 2 82 17 C100 -1 127 8 124 25 C148 11 169 29 157 46 C174 65 150 78 131 68 C114 86 91 76 85 68 C64 84 39 72 32 48Z"
+                    fill="#E8C56E"
+                  />
+                  <path
+                    d="M45 145 Q90 135 135 145"
+                    stroke="#E8C56E"
+                    strokeWidth="5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </div>
+            </div>
 
             <h2 className="section-heading">Vue d'ensemble</h2>
 
@@ -365,10 +360,14 @@ export default function App() {
                 const Icon = card.icon;
                 return (
                   <article className="stat-card" key={card.label}>
-                    <div className="stat-icon"><Icon size={22} /></div>
+                    <div className="stat-icon">
+                      <Icon size={22} />
+                    </div>
                     <div>
                       <p>{card.label}</p>
-                      <strong>{card.value === null ? "—" : card.value}</strong>
+                      <strong>
+                        {card.value === null ? "—" : card.value}
+                      </strong>
                     </div>
                   </article>
                 );
@@ -386,7 +385,9 @@ export default function App() {
           </div>
         ) : (
           <div className="section-placeholder">
-            <div className="placeholder-icon"><Leaf size={32} /></div>
+            <div className="placeholder-icon">
+              <Leaf size={32} />
+            </div>
             <h2>{titles[section]}</h2>
             <p>
               Cette rubrique sera construite et connectée à Supabase
