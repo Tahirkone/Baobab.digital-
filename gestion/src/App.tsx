@@ -1,4 +1,3 @@
-
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
 import type { Session } from "@supabase/supabase-js";
@@ -12,7 +11,6 @@ import {
   Settings,
   LogOut,
   LockKeyhole,
-  Leaf,
   RefreshCw,
   Menu,
   X,
@@ -181,6 +179,59 @@ function paymentTone(value: string) {
   if (value === "confirme") return "badge-success";
   if (value === "echoue") return "badge-danger";
   return "badge-warning";
+}
+
+function BaobabIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 180 180"
+      fill="none"
+      aria-hidden="true"
+    >
+      <path
+        d="M45 150 Q90 138 135 150"
+        stroke="#0F3D2E"
+        strokeWidth="5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M78 148 L84 88 L72 66 L91 79 L105 58 L101 87 L112 148 Z"
+        fill="#0F3D2E"
+      />
+      <path
+        d="M89 82 C65 77 50 63 39 44 M96 80 C112 68 126 53 140 34 M86 77 C77 56 77 38 80 22 M101 77 C104 52 99 36 95 20"
+        stroke="#0F3D2E"
+        strokeWidth="7"
+        strokeLinecap="round"
+      />
+      <path
+        d="M32 48 C12 38 21 14 44 18 C48 -1 77 2 82 17 C100 -1 127 8 124 25 C148 11 169 29 157 46 C174 65 150 78 131 68 C114 86 91 76 85 68 C64 84 39 72 32 48Z"
+        fill="#C9A227"
+      />
+    </svg>
+  );
+}
+
+function BrandMark({ logo, className }: { logo: string; className?: string }) {
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    setFailed(false);
+  }, [logo]);
+
+  if (logo && !failed) {
+    return (
+      <img
+        className={className}
+        src={logo}
+        alt="Logo"
+        onError={() => setFailed(true)}
+      />
+    );
+  }
+
+  return <BaobabIcon className={className} />;
 }
 
 function Notice({
@@ -423,6 +474,28 @@ export default function App() {
     };
   }, []);
 
+  useEffect(() => {
+    document.body.classList.toggle("menu-open", mobileMenu);
+    return () => {
+      document.body.classList.remove("menu-open");
+    };
+  }, [mobileMenu]);
+
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") setMobileMenu(false);
+    }
+    function onResize() {
+      if (window.innerWidth >= 992) setMobileMenu(false);
+    }
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setLoading(true);
@@ -482,7 +555,7 @@ export default function App() {
   }
 
   function scrollToOrderDetail() {
-    if (window.innerWidth > 900) return;
+    if (window.innerWidth >= 992) return;
     window.setTimeout(() => {
       document
         .getElementById("order-detail")
@@ -866,29 +939,47 @@ export default function App() {
         .map((item) => `${item.nom_service} × ${item.quantite}`)
         .join(", ") || "Prestation non détaillée";
 
+    const logoHtml = brandLogo
+      ? `<img class="logo" src="${safe(brandLogo)}" alt="" onerror="this.style.display='none'">`
+      : "";
+
     receiptWindow.document.open();
     receiptWindow.document.write(`
       <!doctype html>
       <html lang="fr">
       <head>
         <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Reçu BAOBAB DIGITAL</title>
         <style>
-          body{font-family:Arial,sans-serif;color:#0F3D2E;padding:35px}
-          .receipt{max-width:600px;margin:auto;border:1px solid #ddd;border-top:6px solid #C9A227;padding:30px}
-          h1{margin-bottom:4px;color:#0F3D2E}
-          .muted{color:#666;font-size:13px}
-          hr{border:0;border-top:1px solid #ddd;margin:20px 0}
-          .line{display:flex;justify-content:space-between;margin:13px 0;gap:20px}
-          .total{font-size:21px;font-weight:bold}
-          .footer{text-align:center;margin-top:35px;font-size:12px;color:#666}
-          @media print{body{padding:0}.receipt{border:0}}
+          *{box-sizing:border-box}
+          body{font-family:Arial,Helvetica,sans-serif;color:#0F3D2E;margin:0;padding:20px;background:#f5f7f4}
+          .receipt{max-width:600px;margin:auto;background:#fff;border:1px solid #ddd;border-top:8px solid #C9A227;padding:28px;border-radius:6px}
+          .head{display:flex;align-items:center;gap:14px}
+          .logo{width:64px;height:64px;object-fit:contain}
+          h1{margin:0 0 4px;color:#0F3D2E;font-size:22px}
+          h2{margin:0;font-size:18px;letter-spacing:1px}
+          .muted{color:#666;font-size:13px;margin:0}
+          hr{border:0;border-top:1px solid #ddd;margin:18px 0}
+          p{margin:6px 0}
+          .line{display:flex;justify-content:space-between;margin:12px 0;gap:20px}
+          .line span{text-align:right;overflow-wrap:anywhere}
+          .total{font-size:20px;font-weight:bold;color:#0F3D2E;background:#F6EBC4;padding:12px;border-radius:8px}
+          .footer{text-align:center;margin-top:30px;font-size:12px;color:#666}
+          .print-btn{display:block;width:100%;max-width:600px;margin:16px auto 0;padding:14px;border:0;border-radius:10px;background:#0F3D2E;color:#fff;font-size:16px;font-weight:bold}
+          @page{size:A5;margin:10mm}
+          @media print{body{padding:0;background:#fff}.receipt{border:0;border-top:8px solid #C9A227}.print-btn{display:none}}
         </style>
       </head>
       <body>
         <div class="receipt">
-          <h1>${safe(brandName)}</h1>
-          <p class="muted">${safe(brandSlogan)}</p>
+          <div class="head">
+            ${logoHtml}
+            <div>
+              <h1>${safe(brandName)}</h1>
+              <p class="muted">${safe(brandSlogan)}</p>
+            </div>
+          </div>
           <hr>
           <h2>REÇU DE PAIEMENT</h2>
           <p>Référence du reçu : ${safe(payment.id.slice(0, 8).toUpperCase())}</p>
@@ -904,6 +995,7 @@ export default function App() {
           <hr>
           <p class="footer">Merci pour votre confiance.<br>${safe(brandName)}</p>
         </div>
+        <button class="print-btn" onclick="window.print()">Imprimer / Enregistrer en PDF</button>
         <script>window.onload=()=>window.print();</script>
       </body>
       </html>
@@ -915,12 +1007,13 @@ export default function App() {
     setSection(id);
     setMobileMenu(false);
     showNotice("");
+    window.scrollTo({ top: 0 });
   }
 
   if (loading) {
     return (
       <div className="loading">
-        <Leaf size={28} />
+        <BaobabIcon className="loading-icon" />
         <span>Chargement de BAOBAB DIGITAL...</span>
       </div>
     );
@@ -930,29 +1023,38 @@ export default function App() {
     return (
       <main className="login-page">
         <section className="login-card">
-          <div className="brand-icon">
-            <Leaf size={34} />
+          <div className="login-logo">
+            <BaobabIcon className="brand-mark" />
           </div>
           <h1>BAOBAB DIGITAL</h1>
-          <p className="subtitle">Espace de gestion sécurisé</p>
+          <p className="subtitle">Le numérique à votre portée.</p>
+          <p className="login-intro">Espace de gestion sécurisé</p>
           <form onSubmit={handleLogin}>
-            <label>Adresse e-mail</label>
+            <label htmlFor="login-email">Adresse e-mail</label>
             <input
+              id="login-email"
               type="email"
+              autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="Ton adresse e-mail"
+              placeholder="Votre adresse e-mail"
               required
             />
-            <label>Mot de passe</label>
+            <label htmlFor="login-password">Mot de passe</label>
             <input
+              id="login-password"
               type="password"
+              autoComplete="current-password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder="Ton mot de passe"
+              placeholder="Votre mot de passe"
               required
             />
-            <button type="submit" disabled={loading}>
+            <button
+              type="submit"
+              className="btn btn-primary btn-block btn-large"
+              disabled={loading}
+            >
               <LockKeyhole size={18} />
               Se connecter
             </button>
@@ -969,16 +1071,26 @@ export default function App() {
 
   return (
     <main className="admin-layout">
+      {mobileMenu && (
+        <button
+          type="button"
+          className="menu-overlay"
+          aria-label="Fermer le menu"
+          onClick={() => setMobileMenu(false)}
+        />
+      )}
+
       <aside className={`sidebar ${mobileMenu ? "sidebar-open" : ""}`}>
         <div className="sidebar-brand">
           <div className="brand-logo">
-            <Leaf size={28} />
+            <BrandMark logo={brandLogo} className="brand-mark" />
           </div>
           <div className="brand-name">
             <strong>{brandName}</strong>
-            <span>Gestion</span>
+            <span>Espace de gestion</span>
           </div>
           <button
+            type="button"
             className="close-menu"
             onClick={() => setMobileMenu(false)}
             aria-label="Fermer le menu"
@@ -992,46 +1104,47 @@ export default function App() {
             const Icon = item.icon;
             return (
               <button
+                type="button"
                 key={item.id}
                 className={section === item.id ? "nav-item active" : "nav-item"}
+                aria-current={section === item.id ? "page" : undefined}
                 onClick={() => navigate(item.id)}
               >
-                <Icon size={19} />
+                <Icon size={20} />
                 <span>{item.label}</span>
               </button>
             );
           })}
         </nav>
 
-        <button className="sidebar-logout" onClick={logout}>
-          <LogOut size={19} />
+        <button type="button" className="sidebar-logout" onClick={logout}>
+          <LogOut size={20} />
           Déconnexion
         </button>
       </aside>
 
-      {mobileMenu && (
-        <button
-          className="menu-overlay"
-          aria-label="Fermer le menu"
-          onClick={() => setMobileMenu(false)}
-        />
-      )}
-
       <section className="main-area">
         <header className="topbar">
           <button
+            type="button"
             className="menu-toggle"
             onClick={() => setMobileMenu(true)}
             aria-label="Ouvrir le menu"
           >
-            <Menu size={23} />
+            <Menu size={24} />
           </button>
           <div className="topbar-title">
             <h1>{titles[section]}</h1>
             <p>{brandSlogan}</p>
           </div>
-          <button className="refresh-button" onClick={refresh} disabled={saving}>
-            <RefreshCw size={17} className={saving ? "spin" : ""} />
+          <button
+            type="button"
+            className="refresh-button"
+            onClick={refresh}
+            disabled={saving}
+            aria-label="Actualiser les données"
+          >
+            <RefreshCw size={18} className={saving ? "spin" : ""} />
             <span>Actualiser</span>
           </button>
         </header>
@@ -1043,30 +1156,69 @@ export default function App() {
             <>
               <div className="welcome-card">
                 <div className="welcome-content">
-                  <div>
+                  <div className="welcome-text">
                     <span className="welcome-tag">ESPACE ADMINISTRATEUR</span>
                     <h2>Bienvenue dans {brandName} !</h2>
                     <p>{brandSlogan}</p>
                   </div>
-                  <svg className="baobab-tree" viewBox="0 0 180 180" fill="none">
-                    <path d="M78 145 L84 85 L72 63 L91 76 L105 55 L101 84 L112 145 Z" fill="#D6AE51"/>
-                    <path d="M89 80 C65 75 50 61 39 42 M96 78 C112 66 126 51 140 32 M86 75 C77 54 77 36 80 20 M101 75 C104 50 99 34 95 18" stroke="#D6AE51" strokeWidth="8" strokeLinecap="round"/>
-                    <path d="M32 48 C12 38 21 14 44 18 C48 -1 77 2 82 17 C100 -1 127 8 124 25 C148 11 169 29 157 46 C174 65 150 78 131 68 C114 86 91 76 85 68 C64 84 39 72 32 48Z" fill="#E8C56E"/>
-                    <path d="M45 145 Q90 135 135 145" stroke="#E8C56E" strokeWidth="5" strokeLinecap="round"/>
-                  </svg>
+                  <div className="welcome-badge">
+                    <BrandMark logo={brandLogo} className="baobab-tree" />
+                  </div>
                 </div>
               </div>
 
-              <h2 className="section-heading">Vue financière</h2>
+              <h2 className="section-heading">Actions rapides</h2>
+              <div className="quick-grid">
+                <button type="button" className="quick-tile" onClick={() => navigate("orders")}>
+                  <span className="quick-icon"><ShoppingBag size={24} /></span>
+                  <span>Voir les commandes</span>
+                </button>
+                <button type="button" className="quick-tile" onClick={() => navigate("payments")}>
+                  <span className="quick-icon"><CreditCard size={24} /></span>
+                  <span>Enregistrer un paiement</span>
+                </button>
+                <button type="button" className="quick-tile" onClick={() => navigate("expenses")}>
+                  <span className="quick-icon"><Receipt size={24} /></span>
+                  <span>Ajouter une dépense</span>
+                </button>
+                <button type="button" className="quick-tile" onClick={() => navigate("services")}>
+                  <span className="quick-icon"><BriefcaseBusiness size={24} /></span>
+                  <span>Gérer les services</span>
+                </button>
+              </div>
+
+              <h2 className="section-heading">Mon argent</h2>
+              <div className="finance-grid">
+                <article className="finance-card finance-in">
+                  <div className="finance-icon"><TrendingUp size={22} /></div>
+                  <p>Recettes encaissées</p>
+                  <strong>{money(revenue)}</strong>
+                </article>
+                <article className="finance-card finance-out">
+                  <div className="finance-icon"><Receipt size={22} /></div>
+                  <p>Dépenses</p>
+                  <strong>{money(totalExpenses)}</strong>
+                </article>
+                <article
+                  className={
+                    balance < 0
+                      ? "finance-card finance-balance negative"
+                      : "finance-card finance-balance"
+                  }
+                >
+                  <div className="finance-icon"><Wallet size={22} /></div>
+                  <p>Solde</p>
+                  <strong>{money(balance)}</strong>
+                </article>
+              </div>
+
+              <h2 className="section-heading">Mon activité</h2>
               <div className="stats-grid">
                 {[
                   { label: "Commandes", value: orders.length, icon: ShoppingBag },
                   { label: "Clients", value: clients.length, icon: Users },
-                  { label: "Services", value: services.filter((item) => item.is_active).length, icon: BriefcaseBusiness },
+                  { label: "Services actifs", value: services.filter((item) => item.is_active).length, icon: BriefcaseBusiness },
                   { label: "Paiements confirmés", value: confirmedPayments.length, icon: CheckCircle2 },
-                  { label: "Recettes encaissées", value: money(revenue), icon: TrendingUp },
-                  { label: "Dépenses", value: money(totalExpenses), icon: Receipt },
-                  { label: "Solde", value: money(balance), icon: Wallet },
                 ].map((card) => {
                   const Icon = card.icon;
                   return (
@@ -1084,18 +1236,18 @@ export default function App() {
               <div className="card watch-card">
                 <h3 className="card-title"><Clock size={18} /> À surveiller</h3>
                 <div className="watch-list">
-                  <div className="watch-item">
+                  <button type="button" className="watch-item" onClick={() => navigate("orders")}>
                     <span>Commandes non payées</span>
                     <strong>{orders.filter((item) => item.statut_paiement === "impaye").length}</strong>
-                  </div>
-                  <div className="watch-item">
+                  </button>
+                  <button type="button" className="watch-item" onClick={() => navigate("payments")}>
                     <span>Paiements en attente</span>
                     <strong>{payments.filter((item) => item.statut === "en_attente").length}</strong>
-                  </div>
-                  <div className="watch-item">
+                  </button>
+                  <button type="button" className="watch-item" onClick={() => navigate("orders")}>
                     <span>Commandes en cours</span>
                     <strong>{orders.filter((item) => item.statut === "en_cours").length}</strong>
-                  </div>
+                  </button>
                 </div>
               </div>
             </>
@@ -1120,11 +1272,12 @@ export default function App() {
                 </div>
               ) : (
                 <div className="orders-layout">
-                  <div className="card">
+                  <div className="card" id="order-list">
                     <h3 className="card-title">Liste des commandes ({filteredOrders.length})</h3>
                     <div className="order-list">
                       {filteredOrders.map((order) => (
                         <button
+                          type="button"
                           key={order.id}
                           className={selectedOrderId === order.id ? "order-item selected" : "order-item"}
                           onClick={() => {
@@ -1148,6 +1301,17 @@ export default function App() {
                       <p className="empty-text">Sélectionne une commande pour voir ses détails.</p>
                     ) : (
                       <>
+                        <button
+                          type="button"
+                          className="btn btn-secondary btn-small back-to-list"
+                          onClick={() =>
+                            document
+                              .getElementById("order-list")
+                              ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                          }
+                        >
+                          ↑ Retour à la liste
+                        </button>
                         <h3 className="card-title">Détails de la commande</h3>
                         <div className="detail-list">
                           <p><span>Référence</span><strong>{selectedOrder.reference}</strong></p>
@@ -1182,6 +1346,7 @@ export default function App() {
                           <input
                             className="input"
                             type="number"
+                            inputMode="numeric"
                             min="0"
                             step="1"
                             value={orderAmount}
@@ -1210,11 +1375,12 @@ export default function App() {
                         </Field>
 
                         <button
-                          className="btn btn-primary btn-block"
+                          type="button"
+                          className="btn btn-primary btn-block btn-large"
                           onClick={saveOrder}
                           disabled={saving}
                         >
-                          <Save size={17} /> Enregistrer
+                          <Save size={18} /> Enregistrer
                         </button>
 
                         <h4 className="sub-title">Historique</h4>
@@ -1292,16 +1458,16 @@ export default function App() {
                     <textarea className="input" value={serviceDescription} onChange={(event) => setServiceDescription(event.target.value)} rows={3} />
                   </Field>
                   <Field label="Tarif indicatif (FCFA)">
-                    <input className="input" type="number" min="0" step="1" value={servicePrice} onChange={(event) => setServicePrice(event.target.value)} required />
+                    <input className="input" type="number" inputMode="numeric" min="0" step="1" value={servicePrice} onChange={(event) => setServicePrice(event.target.value)} required />
                   </Field>
                   <label className="checkbox-row">
                     <input type="checkbox" checked={serviceActive} onChange={(event) => setServiceActive(event.target.checked)} />
                     Service actif
                   </label>
                   <div className="btn-row">
-                    <button className="btn btn-primary" disabled={saving}><Save size={17} /> Enregistrer</button>
+                    <button className="btn btn-primary btn-large" disabled={saving}><Save size={18} /> Enregistrer</button>
                     {serviceId && (
-                      <button type="button" className="btn btn-secondary" onClick={() => editService()}>Annuler</button>
+                      <button type="button" className="btn btn-secondary btn-large" onClick={() => editService()}>Annuler</button>
                     )}
                   </div>
                 </form>
@@ -1322,8 +1488,9 @@ export default function App() {
                           </div>
                         </div>
                         <div className="btn-row">
-                          <button className="btn btn-secondary btn-small" onClick={() => editService(service)}>Modifier</button>
+                          <button type="button" className="btn btn-secondary btn-small" onClick={() => editService(service)}>Modifier</button>
                           <button
+                            type="button"
                             className={service.is_active ? "btn btn-danger btn-small" : "btn btn-success btn-small"}
                             onClick={() => toggleService(service)}
                           >
@@ -1381,7 +1548,7 @@ export default function App() {
                   </Field>
 
                   <Field label="Montant intégral reçu / à vérifier (FCFA)">
-                    <input className="input" type="number" min="1" step="1" value={paymentAmount} onChange={(event) => setPaymentAmount(event.target.value)} required />
+                    <input className="input" type="number" inputMode="numeric" min="1" step="1" value={paymentAmount} onChange={(event) => setPaymentAmount(event.target.value)} required />
                   </Field>
 
                   <Field label="Méthode">
@@ -1403,8 +1570,8 @@ export default function App() {
                   )}
                 </div>
 
-                <button className="btn btn-primary" disabled={saving}>
-                  <Plus size={17} /> Enregistrer le paiement
+                <button className="btn btn-primary btn-large" disabled={saving}>
+                  <Plus size={18} /> Enregistrer le paiement
                 </button>
                 <p className="help-text">
                   Les espèces sont enregistrées comme reçues par l'administrateur. Orange Money reste en attente de confirmation officielle.
@@ -1440,6 +1607,7 @@ export default function App() {
                           </div>
                           {payment.statut === "confirme" && order && (
                             <button
+                              type="button"
                               className="btn btn-secondary btn-small"
                               onClick={() => printReceipt(payment, order)}
                             >
@@ -1476,13 +1644,13 @@ export default function App() {
                     <input className="input" value={expenseDescription} onChange={(event) => setExpenseDescription(event.target.value)} required />
                   </Field>
                   <Field label="Montant (FCFA)">
-                    <input className="input" type="number" min="1" step="1" value={expenseAmount} onChange={(event) => setExpenseAmount(event.target.value)} required />
+                    <input className="input" type="number" inputMode="numeric" min="1" step="1" value={expenseAmount} onChange={(event) => setExpenseAmount(event.target.value)} required />
                   </Field>
                   <Field label="Date">
                     <input className="input" type="date" value={expenseDate} onChange={(event) => setExpenseDate(event.target.value)} required />
                   </Field>
                 </div>
-                <button className="btn btn-primary" disabled={saving}><Plus size={17} /> Enregistrer la dépense</button>
+                <button className="btn btn-primary btn-large" disabled={saving}><Plus size={18} /> Enregistrer la dépense</button>
               </form>
 
               <div className="card section-gap">
@@ -1527,8 +1695,8 @@ export default function App() {
                     <img src={brandLogo} alt="Logo BAOBAB DIGITAL" />
                   </div>
                 )}
-                <button className="btn btn-primary" disabled={saving}>
-                  <Save size={17} /> Enregistrer les paramètres
+                <button className="btn btn-primary btn-large" disabled={saving}>
+                  <Save size={18} /> Enregistrer les paramètres
                 </button>
               </form>
               <Notice>
