@@ -3,6 +3,7 @@ name: Build BAOBAB DIGITAL GESTION
 on:
   push:
     branches:
+      - main
       - feat/payment-security
   pull_request:
     branches:
