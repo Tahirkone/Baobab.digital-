@@ -25,6 +25,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { supabase } from "./lib/supabase";
+import PublicRequest from "./PublicRequest";
 
 type Section =
   | "dashboard"
@@ -1187,6 +1188,10 @@ export default function App() {
     setMobileMenu(false);
     showNotice("");
     window.scrollTo({ top: 0 });
+  }
+
+  if (window.location.pathname.replace(/\\/$/, "") === "/demande") {
+    return <PublicRequest />;
   }
 
   if (loading) {
