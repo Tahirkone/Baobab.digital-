@@ -68,6 +68,27 @@ REVOKE ALL ON TABLE public.historique_paiements FROM PUBLIC, anon;
 REVOKE INSERT, UPDATE, DELETE ON TABLE public.historique_paiements FROM authenticated;
 REVOKE INSERT, UPDATE, DELETE ON TABLE public.paiements FROM PUBLIC, anon, authenticated;
 
+-- Le montant final d'une commande payée ne peut plus être modifié directement.
+CREATE OR REPLACE FUNCTION public.proteger_montant_commande_payee()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = ''
+AS $function$
+BEGIN
+  IF OLD.statut_paiement = 'paye'
+     AND NEW.montant_final IS DISTINCT FROM OLD.montant_final THEN
+    RAISE EXCEPTION 'Le montant d’une commande payée est verrouillé. Toute correction doit suivre une procédure administrative auditée.';
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+
+DROP TRIGGER IF EXISTS proteger_montant_commande_payee ON public.ordres;
+CREATE TRIGGER proteger_montant_commande_payee
+  BEFORE UPDATE OF montant_final ON public.ordres
+  FOR EACH ROW
+  EXECUTE FUNCTION public.proteger_montant_commande_payee();
+
 CREATE OR REPLACE FUNCTION public.enregistrer_paiement(
   p_ordre_id uuid,
   p_methode text,
