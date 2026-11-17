@@ -82,6 +82,8 @@ type Payment = {
   statut: string;
   reference_transaction: string | null;
   confirme_le: string | null;
+  motif_refus?: string | null;
+  refuse_le?: string | null;
   created_at: string;
 };
 
@@ -177,8 +179,19 @@ function statusTone(value: string) {
 
 function paymentTone(value: string) {
   if (value === "confirme") return "badge-success";
-  if (value === "echoue") return "badge-danger";
+  if (value === "echoue" || value === "refuse") return "badge-danger";
   return "badge-warning";
+}
+
+function paymentMethodText(value: string) {
+  const labels: Record<string, string> = {
+    especes: "Espèces",
+    orange_money: "Orange Money",
+    moov_money: "Moov Money",
+    wave: "Wave",
+    virement_bancaire: "Virement bancaire",
+  };
+  return labels[value] ?? value;
 }
 
 function BaobabIcon({ className }: { className?: string }) {
@@ -294,6 +307,8 @@ export default function App() {
   const [paymentMethod, setPaymentMethod] = useState("especes");
   const [paymentAmount, setPaymentAmount] = useState("");
   const [transactionReference, setTransactionReference] = useState("");
+  const [refusingPaymentId, setRefusingPaymentId] = useState("");
+  const [refusalReason, setRefusalReason] = useState("");
   const [brandName, setBrandName] = useState("BAOBAB DIGITAL");
   const [brandSlogan, setBrandSlogan] = useState("Le numérique à votre portée.");
   const [brandLogo, setBrandLogo] = useState("");
@@ -773,20 +788,12 @@ export default function App() {
 
     setSaving(true);
 
-    const paymentStatus =
-      paymentMethod === "especes" ? "confirme" : "en_attente";
-
-    const { error } = await supabase.from("paiements").insert({
-      ordre_id: order.id,
-      methode: paymentMethod,
-      montant: amount,
-      statut: paymentStatus,
-      reference_transaction:
-        paymentMethod === "orange_money"
-          ? transactionReference.trim() || null
-          : null,
-      confirme_le:
-        paymentStatus === "confirme" ? new Date().toISOString() : null,
+    const { error } = await supabase.rpc("enregistrer_paiement", {
+      p_ordre_id: order.id,
+      p_methode: paymentMethod,
+      p_montant: amount,
+      p_reference_transaction:
+        paymentMethod === "especes" ? null : transactionReference.trim() || null,
     });
 
     if (error) {
@@ -795,62 +802,69 @@ export default function App() {
       return;
     }
 
-    if (paymentStatus === "confirme") {
-      const newOrderStatus =
-        order.statut === "attente_paiement" ? "paye" : order.statut;
-
-      const { error: orderError } = await supabase
-        .from("ordres")
-        .update({
-          statut_paiement: "paye",
-          statut: newOrderStatus,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", order.id);
-
-      if (orderError) {
-        await loadAll();
-        showNotice(
-          "Le paiement en espèces est enregistré, mais la commande n'a pas été mise à jour. Ne recommence pas le paiement : vérifie la commande.",
-          true
-        );
-        setSaving(false);
-        return;
-      }
-
-      if (newOrderStatus !== order.statut) {
-        const { error: historyError } = await supabase
-          .from("historique_commandes")
-          .insert({
-            ordre_id: order.id,
-            ancien_statut: order.statut,
-            nouveau_statut: newOrderStatus,
-            modifie_par: session?.user.email ?? "Administrateur",
-          });
-
-        if (historyError) {
-          await loadAll();
-          showNotice(
-            "Paiement confirmé et commande mise à jour, mais l'historique n'a pas pu être enregistré.",
-            true
-          );
-          setSaving(false);
-          return;
-        }
-      }
-    }
-
     setTransactionReference("");
     const loaded = await loadAll();
 
     if (loaded) {
       showNotice(
-        paymentStatus === "confirme"
-          ? "Paiement en espèces enregistré comme reçu."
-          : "Paiement Orange Money enregistré en attente de confirmation officielle."
+        paymentMethod === "especes"
+          ? "Paiement en espèces enregistré et confirmé."
+          : "Paiement enregistré en attente de vérification réelle par l'administrateur."
       );
     }
 
+    setSaving(false);
+  }
+
+  async function confirmPayment(paymentId: string) {
+    if (
+      !window.confirm(
+        "As-tu vérifié directement que l'argent est réellement arrivé sur le compte ou le portefeuille BAOBAB DIGITAL ? Ne confirme pas uniquement sur la base d'une capture d'écran ou d'un SMS."
+      )
+    ) {
+      return;
+    }
+
+    setSaving(true);
+    const { error } = await supabase.rpc("confirmer_paiement", {
+      p_paiement_id: paymentId,
+    });
+
+    if (error) {
+      showNotice("Confirmation impossible : " + error.message, true);
+      setSaving(false);
+      return;
+    }
+
+    const loaded = await loadAll();
+    if (loaded) showNotice("Paiement vérifié et confirmé. Le reçu peut maintenant être imprimé.");
+    setSaving(false);
+  }
+
+  async function refusePayment(paymentId: string) {
+    const reason = refusalReason.trim();
+
+    if (reason.length < 5) {
+      showNotice("Indique un motif de refus d'au moins 5 caractères.", true);
+      return;
+    }
+
+    setSaving(true);
+    const { error } = await supabase.rpc("refuser_paiement", {
+      p_paiement_id: paymentId,
+      p_motif: reason,
+    });
+
+    if (error) {
+      showNotice("Refus impossible : " + error.message, true);
+      setSaving(false);
+      return;
+    }
+
+    setRefusingPaymentId("");
+    setRefusalReason("");
+    const loaded = await loadAll();
+    if (loaded) showNotice("Paiement refusé. Une nouvelle tentative pourra être enregistrée.");
     setSaving(false);
   }
 
@@ -990,7 +1004,7 @@ export default function App() {
           <div class="line"><strong>Téléphone</strong><span>${safe(order.telephone_client)}</span></div>
           <div class="line"><strong>Prestation</strong><span>${safe(prestation)}</span></div>
           <div class="line total"><strong>Montant payé</strong><span>${money(payment.montant)}</span></div>
-          <div class="line"><strong>Méthode</strong><span>${payment.methode === "especes" ? "Espèces" : "Orange Money"}</span></div>
+          <div class="line"><strong>Méthode</strong><span>${paymentMethodText(payment.methode)}</span></div>
           <div class="line"><strong>État</strong><span>Paiement confirmé</span></div>
           <hr>
           <p class="footer">Merci pour votre confiance.<br>${safe(brandName)}</p>
@@ -1555,16 +1569,19 @@ export default function App() {
                     <select className="input" value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)}>
                       <option value="especes">Espèces</option>
                       <option value="orange_money">Orange Money</option>
+                      <option value="moov_money">Moov Money</option>
+                      <option value="wave">Wave</option>
+                      <option value="virement_bancaire">Virement bancaire</option>
                     </select>
                   </Field>
 
-                  {paymentMethod === "orange_money" && (
+                  {paymentMethod !== "especes" && (
                     <Field label="Référence de transaction (facultative)">
                       <input
                         className="input"
                         value={transactionReference}
                         onChange={(event) => setTransactionReference(event.target.value)}
-                        placeholder="Référence Orange Money"
+                        placeholder="Référence de transaction"
                       />
                     </Field>
                   )}
@@ -1574,7 +1591,7 @@ export default function App() {
                   <Plus size={18} /> Enregistrer le paiement
                 </button>
                 <p className="help-text">
-                  Les espèces sont enregistrées comme reçues par l'administrateur. Orange Money reste en attente de confirmation officielle.
+                  Les espèces sont confirmées à l'enregistrement. Les paiements électroniques restent en attente : vérifie le crédit réel sur le compte avant de les confirmer. Une capture d'écran ou un SMS ne suffit pas à prouver le paiement.
                 </p>
               </form>
 
@@ -1594,25 +1611,93 @@ export default function App() {
                             <div className="row-meta">
                               <span className="price">{money(payment.montant)}</span>
                               <span className="badge badge-neutral">
-                                {payment.methode === "especes" ? "Espèces" : "Orange Money"}
+                                {paymentMethodText(payment.methode)}
                               </span>
                               <span className={`badge ${paymentTone(payment.statut)}`}>
                                 {payment.statut === "confirme"
                                   ? "Confirmé"
-                                  : payment.statut === "echoue"
-                                    ? "Échoué"
-                                    : "En attente"}
+                                  : payment.statut === "refuse"
+                                    ? "Refusé"
+                                    : payment.statut === "echoue"
+                                      ? "Échoué"
+                                      : "En attente"}
                               </span>
                             </div>
+                            {payment.reference_transaction && (
+                              <p>Référence : {payment.reference_transaction}</p>
+                            )}
+                            {payment.statut === "refuse" && payment.motif_refus && (
+                              <p className="error-message">Motif du refus : {payment.motif_refus}</p>
+                            )}
                           </div>
-                          {payment.statut === "confirme" && order && (
-                            <button
-                              type="button"
-                              className="btn btn-secondary btn-small"
-                              onClick={() => printReceipt(payment, order)}
-                            >
-                              <Printer size={16} /> Imprimer le reçu
-                            </button>
+                          <div className="btn-row">
+                            {payment.statut === "en_attente" && (
+                              <>
+                                <button
+                                  type="button"
+                                  className="btn btn-success btn-small"
+                                  onClick={() => confirmPayment(payment.id)}
+                                  disabled={saving}
+                                >
+                                  <CheckCircle2 size={16} /> Confirmer
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-danger btn-small"
+                                  onClick={() => {
+                                    setRefusingPaymentId(payment.id);
+                                    setRefusalReason("");
+                                  }}
+                                  disabled={saving}
+                                >
+                                  Refuser
+                                </button>
+                              </>
+                            )}
+                            {payment.statut === "confirme" && order && (
+                              <button
+                                type="button"
+                                className="btn btn-secondary btn-small"
+                                onClick={() => printReceipt(payment, order)}
+                              >
+                                <Printer size={16} /> Imprimer le reçu
+                              </button>
+                            )}
+                          </div>
+                          {refusingPaymentId === payment.id && (
+                            <div className="field">
+                              <label htmlFor={`payment-refusal-${payment.id}`}>Motif du refus (obligatoire)</label>
+                              <textarea
+                                id={`payment-refusal-${payment.id}`}
+                                className="input"
+                                rows={2}
+                                maxLength={500}
+                                value={refusalReason}
+                                onChange={(event) => setRefusalReason(event.target.value)}
+                                placeholder="Ex. : transaction introuvable sur le compte."
+                              />
+                              <div className="btn-row">
+                                <button
+                                  type="button"
+                                  className="btn btn-danger btn-small"
+                                  onClick={() => refusePayment(payment.id)}
+                                  disabled={saving || refusalReason.trim().length < 5}
+                                >
+                                  Confirmer le refus
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn btn-secondary btn-small"
+                                  onClick={() => {
+                                    setRefusingPaymentId("");
+                                    setRefusalReason("");
+                                  }}
+                                  disabled={saving}
+                                >
+                                  Annuler
+                                </button>
+                              </div>
+                            </div>
                           )}
                         </div>
                       );
