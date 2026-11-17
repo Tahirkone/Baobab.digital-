@@ -475,3 +475,46 @@ textarea.input { min-height: 96px; resize: vertical; }
   .admin-layout { display: block; }
   .card { box-shadow: none; }
 }
+
+
+/* Formulaire public client */
+.public-page { min-height:100dvh; padding:18px 16px 28px; background:linear-gradient(155deg,var(--green),var(--green-dark)); }
+.public-header { max-width:760px; margin:0 auto 18px; display:flex; align-items:center; justify-content:space-between; gap:12px; color:#fff; font-size:.82rem; }
+.public-back { display:inline-flex; align-items:center; gap:8px; color:#fff; text-decoration:none; font-weight:800; }
+.public-card { width:100%; max-width:650px; margin:0 auto; padding:26px 22px; border-radius:20px; border-top:6px solid var(--gold); background:#fff; box-shadow:0 16px 42px rgba(0,0,0,.2); }
+.public-brand-mark { width:52px; height:52px; display:grid; place-items:center; margin-bottom:14px; border-radius:15px; background:var(--gold-soft); color:var(--green); font-weight:900; letter-spacing:1px; }
+.public-eyebrow { color:var(--gold); font-size:.75rem; font-weight:800; letter-spacing:1.5px; }
+.public-card h1 { margin:4px 0 8px; color:var(--green); font-size:1.8rem; }
+.public-intro { margin-bottom:22px; color:var(--muted); font-size:.94rem; }
+.public-card form h2 { margin:22px 0 10px; color:var(--green); font-size:1.05rem; }
+.public-card form > label { display:block; margin:12px 0; color:var(--ink); font-size:.9rem; font-weight:650; }
+.public-card form > label input,.public-card textarea { display:block; width:100%; min-height:48px; margin-top:6px; padding:11px 13px; border:1px solid var(--line); border-radius:10px; background:#fbfcfb; color:var(--ink); }
+.public-card textarea { min-height:100px; resize:vertical; }
+.public-card input:focus,.public-card textarea:focus { outline:2px solid var(--gold); border-color:var(--gold); }
+.public-services { display:grid; gap:9px; }
+.public-service { padding:12px; border:1px solid var(--line); border-radius:12px; background:#fbfcfb; }
+.public-service-choice { display:flex; align-items:flex-start; gap:10px; cursor:pointer; }
+.public-service-choice input { width:19px; height:19px; margin-top:3px; accent-color:var(--green); }
+.public-service-choice span { display:grid; gap:3px; }
+.public-service-choice small { color:var(--muted); font-size:.82rem; }
+.public-quantity { display:flex; align-items:center; justify-content:space-between; gap:12px; margin:10px 0 0 29px; color:var(--muted); font-size:.85rem; }
+.public-quantity input { width:90px; min-height:40px; padding:6px 10px; border:1px solid var(--line); border-radius:8px; }
+.public-total { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:16px; padding:14px; border-radius:10px; background:var(--gold-soft); color:var(--green); }
+.public-total strong { font-size:1.15rem; }
+.public-muted { margin-top:8px; color:var(--muted); font-size:.82rem; }
+.public-captcha { margin:18px 0 8px; min-height:65px; }
+.public-warning { margin:16px 0; padding:10px 12px; border-radius:9px; background:#fff5df; color:#805d13; font-size:.85rem; }
+.public-notice { margin:14px 0; padding:11px 12px; border-radius:9px; background:#e8f5ed; color:#17623a; font-size:.9rem; }
+.public-error { background:#fdecea; color:var(--danger); }
+.public-submit { width:100%; min-height:50px; display:flex; align-items:center; justify-content:center; gap:9px; margin-top:16px; padding:12px 16px; border:0; border-radius:11px; background:var(--green); color:#fff; font-size:1rem; font-weight:750; }
+.public-submit:disabled { opacity:.5; }
+.public-honeypot { position:absolute!important; left:-10000px!important; width:1px!important; height:1px!important; overflow:hidden!important; }
+.public-success { padding:24px 8px 8px; text-align:center; color:var(--green); }
+.public-success svg { color:var(--success); }
+.public-success h2 { margin:12px 0; font-size:1.4rem; }
+.public-success p { margin:8px 0; color:var(--muted); }
+.public-success > strong { display:inline-block; margin:6px 0 12px; padding:9px 14px; border-radius:8px; background:var(--gold-soft); letter-spacing:1px; }
+.public-footer { max-width:650px; margin:18px auto 0; color:rgba(255,255,255,.75); text-align:center; font-size:.78rem; }
+.public-spinner { animation:public-spin 1s linear infinite; }
+@keyframes public-spin { to { transform:rotate(360deg); } }
+@media(max-width:520px) { .public-page{padding:14px 10px 24px}.public-card{padding:22px 16px}.public-header span{font-size:.72rem}.public-card h1{font-size:1.55rem} }
