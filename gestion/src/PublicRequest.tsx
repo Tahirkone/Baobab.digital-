@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import type { FormEvent } from "react";
 import { ArrowLeft, CheckCircle2, LoaderCircle, Send } from "lucide-react";
 import { supabase } from "./lib/supabase";
 
@@ -34,7 +35,7 @@ export default function PublicRequest() {
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
-  const [widgetId, setWidgetId] = useState("");
+  const widgetIdRef = useRef("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState("");
@@ -67,7 +68,7 @@ export default function PublicRequest() {
     let script = document.getElementById(scriptId) as HTMLScriptElement | null;
     const renderWidget = () => {
       const container = document.getElementById("public-turnstile");
-      if (!container || !window.turnstile || widgetId) return;
+      if (!container || !window.turnstile || widgetIdRef.current) return;
       const id = window.turnstile.render(container, {
         sitekey: siteKey,
         action: "public_request",
@@ -75,7 +76,7 @@ export default function PublicRequest() {
         "expired-callback": () => setCaptchaToken(""),
         "error-callback": () => setCaptchaToken(""),
       });
-      setWidgetId(id);
+      widgetIdRef.current = id;
     };
     if (!script) {
       script = document.createElement("script");
@@ -91,15 +92,18 @@ export default function PublicRequest() {
       script.addEventListener("load", renderWidget, { once: true });
     }
     return () => {
-      if (widgetId && window.turnstile) window.turnstile.remove(widgetId);
+      if (widgetIdRef.current && window.turnstile) {
+        window.turnstile.remove(widgetIdRef.current);
+        widgetIdRef.current = "";
+      }
     };
-  }, [widgetId]);
+  }, []);
 
   const total = services.reduce((sum, service) =>
     sum + service.indicative_price * (quantities[service.id] ?? 0), 0);
   const selectedCount = Object.values(quantities).filter((quantity) => quantity > 0).length;
 
-  async function submitRequest(event: React.FormEvent<HTMLFormElement>) {
+  async function submitRequest(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setNotice("");
     setError(false);
@@ -143,7 +147,7 @@ export default function PublicRequest() {
       setMessage("");
       setQuantities({});
       setCaptchaToken("");
-      if (widgetId && window.turnstile) window.turnstile.reset(widgetId);
+      if (widgetIdRef.current && window.turnstile) window.turnstile.reset(widgetIdRef.current);
     } catch (submitError) {
       setNotice(submitError instanceof Error ? submitError.message : "Une erreur est survenue.");
       setError(true);
