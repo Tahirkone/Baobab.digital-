@@ -26,8 +26,6 @@ declare global {
   }
 }
 
-const siteKey = import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined;
-
 export default function PublicRequest() {
   const [services, setServices] = useState<PublicService[]>([]);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -35,6 +33,7 @@ export default function PublicRequest() {
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
+  const [siteKey, setSiteKey] = useState("");
   const widgetIdRef = useRef("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -63,10 +62,30 @@ export default function PublicRequest() {
   }, []);
 
   useEffect(() => {
+    let alive = true;
+    fetch("/api/config", { headers: { Accept: "application/json" }, cache: "no-store" })
+      .then((response) => {
+        if (!response.ok) throw new Error("Configuration indisponible");
+        return response.json();
+      })
+      .then((config: { turnstileSiteKey?: unknown }) => {
+        if (alive && typeof config.turnstileSiteKey === "string") {
+          setSiteKey(config.turnstileSiteKey.trim());
+        }
+      })
+      .catch(() => {
+        if (alive) setSiteKey("");
+      });
+    return () => { alive = false; };
+  }, []);
+
+  useEffect(() => {
     if (!siteKey) return;
     const scriptId = "cloudflare-turnstile-script";
     let script = document.getElementById(scriptId) as HTMLScriptElement | null;
+    let cancelled = false;
     const renderWidget = () => {
+      if (cancelled) return;
       const container = document.getElementById("public-turnstile");
       if (!container || !window.turnstile || widgetIdRef.current) return;
       const id = window.turnstile.render(container, {
@@ -92,12 +111,13 @@ export default function PublicRequest() {
       script.addEventListener("load", renderWidget, { once: true });
     }
     return () => {
+      cancelled = true;
       if (widgetIdRef.current && window.turnstile) {
         window.turnstile.remove(widgetIdRef.current);
         widgetIdRef.current = "";
       }
     };
-  }, []);
+  }, [siteKey]);
 
   const total = services.reduce((sum, service) =>
     sum + service.indicative_price * (quantities[service.id] ?? 0), 0);
