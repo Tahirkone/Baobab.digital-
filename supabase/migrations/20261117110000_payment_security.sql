@@ -66,7 +66,8 @@ CREATE POLICY "Admins can manage payment history"
 GRANT SELECT ON public.historique_paiements TO authenticated;
 REVOKE ALL ON TABLE public.historique_paiements FROM PUBLIC, anon;
 REVOKE INSERT, UPDATE, DELETE ON TABLE public.historique_paiements FROM authenticated;
-REVOKE INSERT, UPDATE, DELETE ON TABLE public.paiements FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON TABLE public.paiements FROM PUBLIC, anon, authenticated;
+GRANT SELECT ON TABLE public.paiements TO authenticated;
 
 -- L'interface de gestion ne peut modifier que les champs de commande nécessaires.
 -- Le statut de paiement reste exclusivement piloté par les fonctions sécurisées.
