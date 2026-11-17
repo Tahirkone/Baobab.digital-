@@ -68,6 +68,30 @@ REVOKE ALL ON TABLE public.historique_paiements FROM PUBLIC, anon;
 REVOKE INSERT, UPDATE, DELETE ON TABLE public.historique_paiements FROM authenticated;
 REVOKE INSERT, UPDATE, DELETE ON TABLE public.paiements FROM PUBLIC, anon, authenticated;
 
+-- L'interface de gestion ne peut modifier que les champs de commande nécessaires.
+-- Le statut de paiement reste exclusivement piloté par les fonctions sécurisées.
+REVOKE UPDATE ON TABLE public.ordres FROM PUBLIC, anon, authenticated;
+GRANT UPDATE (montant_final, statut, updated_at) ON TABLE public.ordres TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.proteger_statut_paiement_commande()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = ''
+AS $function$
+BEGIN
+  IF NEW.statut = 'paye' AND NEW.statut_paiement <> 'paye' THEN
+    RAISE EXCEPTION 'Une commande ne peut pas être marquée payée sans paiement confirmé.';
+  END IF;
+  RETURN NEW;
+END;
+$function$;
+
+DROP TRIGGER IF EXISTS proteger_statut_paiement_commande ON public.ordres;
+CREATE TRIGGER proteger_statut_paiement_commande
+  BEFORE UPDATE OF statut, statut_paiement ON public.ordres
+  FOR EACH ROW
+  EXECUTE FUNCTION public.proteger_statut_paiement_commande();
+
 -- Le montant final d'une commande payée ne peut plus être modifié directement.
 CREATE OR REPLACE FUNCTION public.proteger_montant_commande_payee()
 RETURNS trigger
