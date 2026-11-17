@@ -64,6 +64,14 @@ BEGIN
   END IF;
 
   v_phone_digits := regexp_replace(v_phone, '[^0-9]', '', 'g');
+  IF char_length(v_phone_digits) < 6 OR char_length(v_phone_digits) > 15 THEN
+    RAISE EXCEPTION 'Le numéro doit contenir entre 6 et 15 chiffres.';
+  END IF;
+
+  IF (SELECT count(DISTINCT x.service_id) FROM jsonb_to_recordset(p_items) AS x(service_id uuid, quantity integer)) <> v_item_count THEN
+    RAISE EXCEPTION 'Une prestation ne peut être sélectionnée qu’une seule fois.';
+  END IF;
+
   SELECT c.id INTO v_client_id
   FROM public.clients AS c
   WHERE regexp_replace(c.telephone, '[^0-9]', '', 'g') = v_phone_digits
