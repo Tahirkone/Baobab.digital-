@@ -9,7 +9,8 @@ ALTER TABLE public.paiements
 
 ALTER TABLE public.paiements
   DROP CONSTRAINT IF EXISTS paiements_methode_check,
-  DROP CONSTRAINT IF EXISTS paiements_statut_check;
+  DROP CONSTRAINT IF EXISTS paiements_statut_check,
+  DROP CONSTRAINT IF EXISTS paiements_motif_refus_check;
 
 ALTER TABLE public.paiements
   ADD CONSTRAINT paiements_methode_check
@@ -63,8 +64,9 @@ CREATE POLICY "Admins can manage payment history"
   WITH CHECK (public.is_baobab_admin());
 
 GRANT SELECT ON public.historique_paiements TO authenticated;
-REVOKE INSERT, UPDATE, DELETE ON public.historique_paiements FROM anon, authenticated;
-REVOKE INSERT, UPDATE, DELETE ON public.paiements FROM anon, authenticated;
+REVOKE ALL ON TABLE public.historique_paiements FROM PUBLIC, anon;
+REVOKE INSERT, UPDATE, DELETE ON TABLE public.historique_paiements FROM authenticated;
+REVOKE INSERT, UPDATE, DELETE ON TABLE public.paiements FROM PUBLIC, anon, authenticated;
 
 CREATE OR REPLACE FUNCTION public.enregistrer_paiement(
   p_ordre_id uuid,
