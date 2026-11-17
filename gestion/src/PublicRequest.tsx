@@ -33,7 +33,8 @@ export default function PublicRequest() {
   const [phone, setPhone] = useState("");
   const [message, setMessage] = useState("");
   const [captchaToken, setCaptchaToken] = useState("");
-  const [siteKey, setSiteKey] = useState("");
+  const buildTimeSiteKey = (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined)?.trim() ?? "";
+  const [siteKey, setSiteKey] = useState(buildTimeSiteKey);
   const widgetIdRef = useRef("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -70,11 +71,11 @@ export default function PublicRequest() {
       })
       .then((config: { turnstileSiteKey?: unknown }) => {
         if (alive && typeof config.turnstileSiteKey === "string") {
-          setSiteKey(config.turnstileSiteKey.trim());
+          setSiteKey(config.turnstileSiteKey.trim() || buildTimeSiteKey);
         }
       })
       .catch(() => {
-        if (alive) setSiteKey("");
+        if (alive) setSiteKey(buildTimeSiteKey);
       });
     return () => { alive = false; };
   }, []);
