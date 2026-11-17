@@ -284,6 +284,12 @@ export default function App() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [details, setDetails] = useState<OrderDetail[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [clientFormId, setClientFormId] = useState("");
+  const [clientFormName, setClientFormName] = useState("");
+  const [clientFormPhone, setClientFormPhone] = useState("");
+  const [newOrderClientId, setNewOrderClientId] = useState("");
+  const [newOrderMessage, setNewOrderMessage] = useState("");
+  const [newOrderServices, setNewOrderServices] = useState<Record<string, number>>({});
   const [services, setServices] = useState<Service[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -658,6 +664,165 @@ export default function App() {
     );
 
     showNotice("Commande mise à jour.");
+    setSaving(false);
+  }
+
+  function editClient(client?: Client) {
+    setClientFormId(client?.id ?? "");
+    setClientFormName(client?.nom_complet ?? "");
+    setClientFormPhone(client?.telephone ?? "");
+    showNotice("");
+  }
+
+  async function saveClient(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const name = clientFormName.trim();
+    const phone = clientFormPhone.trim();
+
+    if (name.length < 2 || phone.length < 6) {
+      showNotice("Saisis un nom et un numéro de téléphone valides.", true);
+      return;
+    }
+
+    setSaving(true);
+    const values = {
+      nom_complet: name,
+      telephone: phone,
+      updated_at: new Date().toISOString(),
+    };
+    const result = clientFormId
+      ? await supabase.from("clients").update(values).eq("id", clientFormId)
+      : await supabase.from("clients").insert({
+          nom_complet: name,
+          telephone: phone,
+        });
+
+    if (result.error) {
+      showNotice("Impossible d'enregistrer le client : " + result.error.message, true);
+      setSaving(false);
+      return;
+    }
+
+    editClient();
+    const { data, error } = await supabase
+      .from("clients")
+      .select("*")
+      .order("created_at", { ascending: false });
+    if (error) {
+      showNotice("Client enregistré, mais actualisation impossible : " + error.message, true);
+    } else {
+      setClients((data ?? []) as Client[]);
+      showNotice(clientFormId ? "Client modifié." : "Client ajouté.");
+    }
+    setSaving(false);
+  }
+
+  function toggleNewOrderService(serviceId: string, checked: boolean) {
+    setNewOrderServices((previous) => {
+      const next = { ...previous };
+      if (checked) next[serviceId] = Math.max(1, next[serviceId] ?? 1);
+      else delete next[serviceId];
+      return next;
+    });
+  }
+
+  async function createManualOrder(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const client = clients.find((item) => item.id === newOrderClientId);
+    const chosenServices = services.filter(
+      (item) => item.is_active && (newOrderServices[item.id] ?? 0) > 0
+    );
+
+    if (!client) {
+      showNotice("Choisis un client pour cette commande.", true);
+      return;
+    }
+    if (chosenServices.length === 0) {
+      showNotice("Choisis au moins un service.", true);
+      return;
+    }
+
+    const total = chosenServices.reduce(
+      (sum, service) => sum + service.indicative_price * newOrderServices[service.id],
+      0
+    );
+    if (!Number.isSafeInteger(total) || total <= 0) {
+      showNotice("Le montant calculé est invalide.", true);
+      return;
+    }
+
+    setSaving(true);
+    const now = new Date().toISOString();
+    const suffix = Math.random().toString(36).slice(2, 7).toUpperCase();
+    const reference = `BD-${Date.now().toString(36).toUpperCase()}-${suffix}`;
+    const { data: createdOrder, error: orderError } = await supabase
+      .from("ordres")
+      .insert({
+        reference,
+        client_id: client.id,
+        nom_client: client.nom_complet,
+        telephone_client: client.telephone,
+        montant_final: total,
+        statut: "nouveau",
+        statut_paiement: "impaye",
+        option_paiement_espece: null,
+        message_client: newOrderMessage.trim() || null,
+        created_at: now,
+        updated_at: now,
+      })
+      .select("*")
+      .single();
+
+    if (orderError || !createdOrder) {
+      showNotice("Création de la commande impossible : " + (orderError?.message ?? "réponse vide"), true);
+      setSaving(false);
+      return;
+    }
+
+    const detailRows = chosenServices.map((service) => ({
+      ordre_id: createdOrder.id,
+      service_id: service.id,
+      nom_service: service.name,
+      prix_indicatif: service.indicative_price,
+      quantite: newOrderServices[service.id],
+    }));
+    const { error: detailsError } = await supabase
+      .from("details_commandes")
+      .insert(detailRows);
+
+    if (detailsError) {
+      const { error: rollbackError } = await supabase
+        .from("ordres")
+        .delete()
+        .eq("id", createdOrder.id);
+      showNotice(
+        "Les prestations n'ont pas pu être enregistrées : " +
+          detailsError.message +
+          (rollbackError ? " Attention : la commande créée n'a pas pu être annulée automatiquement." : " La commande incomplète a été annulée."),
+        true
+      );
+      setSaving(false);
+      return;
+    }
+
+    await supabase.from("historique_commandes").insert({
+      ordre_id: createdOrder.id,
+      ancien_statut: null,
+      nouveau_statut: "nouveau",
+      modifie_par: session?.user.email ?? "Administrateur",
+    });
+
+    setNewOrderClientId("");
+    setNewOrderMessage("");
+    setNewOrderServices({});
+    const loaded = await loadAll();
+    if (loaded) {
+      setSelectedOrderId(createdOrder.id);
+      setOrderAmount(String(total));
+      setOrderStatus("nouveau");
+      await loadOrderDetails(createdOrder.id);
+      showNotice("Commande créée : " + reference);
+    }
     setSaving(false);
   }
 
@@ -1270,6 +1435,50 @@ export default function App() {
           {section === "orders" && (
             <>
               <h2 className="section-heading">Commandes des clients</h2>
+              <form className="card section-gap" onSubmit={createManualOrder}>
+                <h3 className="card-title"><Plus size={18} /> Créer une commande manuellement</h3>
+                <div className="form-grid">
+                  <Field label="Client">
+                    <select className="input" value={newOrderClientId} onChange={(event) => setNewOrderClientId(event.target.value)} required>
+                      <option value="">Choisir un client</option>
+                      {clients.map((client) => (
+                        <option key={client.id} value={client.id}>{client.nom_complet} — {client.telephone}</option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Field label="Message / consigne (facultatif)">
+                    <input className="input" value={newOrderMessage} onChange={(event) => setNewOrderMessage(event.target.value)} placeholder="Précisions sur la demande" />
+                  </Field>
+                </div>
+                <h4 className="sub-title">Prestations à inclure</h4>
+                {services.filter((item) => item.is_active).length === 0 ? (
+                  <p className="empty-text">Ajoute d'abord un service actif dans le menu Services.</p>
+                ) : (
+                  <div className="row-list">
+                    {services.filter((item) => item.is_active).map((service) => {
+                      const quantity = newOrderServices[service.id] ?? 0;
+                      return (
+                        <div className="row-item" key={service.id}>
+                          <label className="checkbox-row">
+                            <input type="checkbox" checked={quantity > 0} onChange={(event) => toggleNewOrderService(service.id, event.target.checked)} />
+                            <span><strong>{service.name}</strong> — {money(service.indicative_price)}</span>
+                          </label>
+                          {quantity > 0 && (
+                            <Field label="Quantité">
+                              <input className="input" type="number" min="1" step="1" value={quantity} onChange={(event) => setNewOrderServices((previous) => ({ ...previous, [service.id]: Math.max(1, Math.floor(Number(event.target.value) || 1)) }))} />
+                            </Field>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                <p className="help-text">Total calculé : <strong>{money(services.reduce((sum, service) => sum + service.indicative_price * (newOrderServices[service.id] ?? 0), 0))}</strong>. Le montant pourra être ajusté dans les détails après création, avant paiement.</p>
+                <button className="btn btn-primary btn-large" disabled={saving || clients.length === 0 || !services.some((item) => item.is_active)}>
+                  <Plus size={18} /> Créer la commande
+                </button>
+                {clients.length === 0 && <p className="help-text">Ajoute d'abord un client dans le menu Clients.</p>}
+              </form>
               <div className="orders-search">
                 <Search size={19} />
                 <input
@@ -1433,8 +1642,22 @@ export default function App() {
           {section === "clients" && (
             <>
               <h2 className="section-heading">Liste des clients</h2>
-              <div className="card">
-                <p className="card-subtitle">Total : {clients.length} client(s)</p>
+              <div className="two-columns">
+                <form className="card" onSubmit={saveClient}>
+                  <h3 className="card-title">{clientFormId ? "Modifier le client" : "Ajouter un client"}</h3>
+                  <Field label="Nom complet">
+                    <input className="input" value={clientFormName} onChange={(event) => setClientFormName(event.target.value)} required minLength={2} />
+                  </Field>
+                  <Field label="Téléphone">
+                    <input className="input" type="tel" inputMode="tel" value={clientFormPhone} onChange={(event) => setClientFormPhone(event.target.value)} required minLength={6} />
+                  </Field>
+                  <div className="btn-row">
+                    <button className="btn btn-primary btn-large" disabled={saving}><Save size={18} /> {clientFormId ? "Enregistrer" : "Ajouter le client"}</button>
+                    {clientFormId && <button type="button" className="btn btn-secondary btn-large" onClick={() => editClient()}>Annuler</button>}
+                  </div>
+                </form>
+                <div className="card">
+                  <p className="card-subtitle">Total : {clients.length} client(s)</p>
                 {clients.length === 0 ? (
                   <p className="empty-text">Aucun client enregistré pour le moment.</p>
                 ) : (
@@ -1446,6 +1669,7 @@ export default function App() {
                           <th>Téléphone</th>
                           <th>Commandes</th>
                           <th>Inscription</th>
+                          <th>Action</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1455,12 +1679,14 @@ export default function App() {
                             <td data-label="Téléphone">{client.telephone}</td>
                             <td data-label="Commandes">{orders.filter((order) => order.client_id === client.id).length}</td>
                             <td data-label="Inscription">{dateText(client.created_at)}</td>
+                            <td data-label="Action"><button type="button" className="btn btn-secondary btn-small" onClick={() => editClient(client)}>Modifier</button></td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   </div>
                 )}
+                </div>
               </div>
             </>
           )}
