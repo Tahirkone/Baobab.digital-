@@ -1365,8 +1365,14 @@ export default function App() {
                             step="1"
                             value={orderAmount}
                             onChange={(event) => setOrderAmount(event.target.value)}
+                            disabled={selectedOrder.statut_paiement === "paye"}
                           />
                         </Field>
+                        {selectedOrder.statut_paiement === "paye" && (
+                          <p className="help-text">
+                            Le montant final est verrouillé parce que cette commande est déjà payée.
+                          </p>
+                        )}
 
                         <Field label="Statut de la commande">
                           <select
