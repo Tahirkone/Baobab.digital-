@@ -1190,7 +1190,7 @@ export default function App() {
     window.scrollTo({ top: 0 });
   }
 
-  if (window.location.pathname.replace(/\\/$/, "") === "/demande") {
+  if (window.location.pathname === "/demande" || window.location.pathname === "/demande/") {
     return <PublicRequest />;
   }
 
