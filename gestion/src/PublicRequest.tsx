@@ -152,7 +152,7 @@ export default function PublicRequest() {
       setNotice(submitError instanceof Error ? submitError.message : "Une erreur est survenue.");
       setError(true);
       setCaptchaToken("");
-      if (widgetId && window.turnstile) window.turnstile.reset(widgetId);
+      if (widgetIdRef.current && window.turnstile) window.turnstile.reset(widgetIdRef.current);
     } finally {
       setSending(false);
     }
