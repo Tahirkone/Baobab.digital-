@@ -76,6 +76,7 @@ type Service = {
   description: string | null;
   indicative_price: number;
   is_active: boolean;
+  icon_url: string | null;
 };
 
 type Payment = {
@@ -276,6 +277,39 @@ function Field({
   );
 }
 
+async function optimizeImageFile(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) {
+    throw new Error("Choisis un fichier image.");
+  }
+  const bitmap = await createImageBitmap(file);
+  const maxDimension = 1200;
+  const scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) {
+    bitmap.close();
+    throw new Error("Impossible de préparer cette image.");
+  }
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const blob = await new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob(
+      (result) => result ? resolve(result) : reject(new Error("La compression de l'image a échoué.")),
+      "image/webp",
+      0.84
+    );
+  });
+  if (blob.size > 2 * 1024 * 1024) {
+    throw new Error("L'image reste trop volumineuse. Choisis une image plus légère.");
+  }
+  return new File([blob], "baobab-image.webp", {
+    type: "image/webp",
+    lastModified: Date.now(),
+  });
+}
+
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -309,6 +343,12 @@ export default function App() {
   const [serviceDescription, setServiceDescription] = useState("");
   const [servicePrice, setServicePrice] = useState("");
   const [serviceActive, setServiceActive] = useState(true);
+  const [serviceIconUrl, setServiceIconUrl] = useState("");
+  const [serviceIconFile, setServiceIconFile] = useState<File | null>(null);
+  const [serviceIconRemoved, setServiceIconRemoved] = useState(false);
+  const [serviceIconPreview, setServiceIconPreview] = useState("");
+  const [brandLogoFile, setBrandLogoFile] = useState<File | null>(null);
+  const [brandLogoPreview, setBrandLogoPreview] = useState("");
   const [expenseDescription, setExpenseDescription] = useState("");
   const [expenseAmount, setExpenseAmount] = useState("");
   const [expenseDate, setExpenseDate] = useState(
@@ -529,6 +569,26 @@ export default function App() {
       listener.subscription.unsubscribe();
     };
   }, []);
+
+  useEffect(() => {
+    if (!brandLogoFile) {
+      setBrandLogoPreview("");
+      return;
+    }
+    const url = URL.createObjectURL(brandLogoFile);
+    setBrandLogoPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [brandLogoFile]);
+
+  useEffect(() => {
+    if (!serviceIconFile) {
+      setServiceIconPreview("");
+      return;
+    }
+    const url = URL.createObjectURL(serviceIconFile);
+    setServiceIconPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [serviceIconFile]);
 
   useEffect(() => {
     document.body.classList.toggle("menu-open", mobileMenu);
@@ -884,6 +944,9 @@ export default function App() {
     setServiceDescription(service?.description ?? "");
     setServicePrice(service ? String(service.indicative_price) : "");
     setServiceActive(service?.is_active ?? true);
+    setServiceIconUrl(service?.icon_url ?? "");
+    setServiceIconFile(null);
+    setServiceIconRemoved(false);
     showNotice("");
   }
 
@@ -897,24 +960,48 @@ export default function App() {
     }
 
     setSaving(true);
-    const values = {
-      name: serviceName.trim(),
-      description: serviceDescription.trim() || null,
-      indicative_price: price,
-      is_active: serviceActive,
-      updated_at: new Date().toISOString(),
-    };
+    const id = serviceId || crypto.randomUUID();
+    let iconUrl = serviceIconRemoved ? null : serviceIconUrl || null;
 
-    const result = serviceId
-      ? await supabase.from("services").update(values).eq("id", serviceId)
-      : await supabase.from("services").insert(values);
+    try {
+      if (serviceIconFile) {
+        const optimized = await optimizeImageFile(serviceIconFile);
+        const path = `services/${id}.webp`;
+        const { error: uploadError } = await supabase.storage
+          .from("baobab-assets")
+          .upload(path, optimized, {
+            cacheControl: "3600",
+            contentType: "image/webp",
+            upsert: true,
+          });
+        if (uploadError) throw uploadError;
+        iconUrl = supabase.storage.from("baobab-assets").getPublicUrl(path).data.publicUrl;
+      }
 
-    if (result.error) {
-      showNotice("Erreur : " + result.error.message, true);
-    } else {
+      const values = {
+        name: serviceName.trim(),
+        description: serviceDescription.trim() || null,
+        indicative_price: price,
+        is_active: serviceActive,
+        icon_url: iconUrl,
+        updated_at: new Date().toISOString(),
+      };
+
+      const result = serviceId
+        ? await supabase.from("services").update(values).eq("id", serviceId)
+        : await supabase.from("services").insert({ id, ...values });
+
+      if (result.error) throw result.error;
+
       editService();
       const loaded = await loadAll();
       if (loaded) showNotice("Service enregistré.");
+    } catch (saveError) {
+      showNotice(
+        "Impossible d'enregistrer le service ou son image : " +
+          (saveError instanceof Error ? saveError.message : "erreur inconnue"),
+        true
+      );
     }
 
     setSaving(false);
@@ -1094,27 +1181,44 @@ export default function App() {
     }
 
     setSaving(true);
-    const values = {
-      nom_marque: brandName.trim(),
-      slogan: brandSlogan.trim() || null,
-      chemin_logo: brandLogo.trim() || null,
-      updated_at: new Date().toISOString(),
-    };
+    try {
+      let logoToSave = brandLogo.trim() || null;
+      if (brandLogoFile) {
+        const optimized = await optimizeImageFile(brandLogoFile);
+        const path = "brand/logo.webp";
+        const { error: uploadError } = await supabase.storage
+          .from("baobab-assets")
+          .upload(path, optimized, {
+            cacheControl: "3600",
+            contentType: "image/webp",
+            upsert: true,
+          });
+        if (uploadError) throw uploadError;
+        logoToSave = supabase.storage.from("baobab-assets").getPublicUrl(path).data.publicUrl;
+      }
 
-    const result = brand
-      ? await supabase
-          .from("parametres_marque")
-          .update(values)
-          .eq("id", brand.id)
-      : await supabase
-          .from("parametres_marque")
-          .insert({ id: 1, ...values });
+      const values = {
+        nom_marque: brandName.trim(),
+        slogan: brandSlogan.trim() || null,
+        chemin_logo: logoToSave,
+        updated_at: new Date().toISOString(),
+      };
 
-    if (result.error) {
-      showNotice("Erreur : " + result.error.message, true);
-    } else {
+      const result = brand
+        ? await supabase.from("parametres_marque").update(values).eq("id", brand.id)
+        : await supabase.from("parametres_marque").insert({ id: 1, ...values });
+
+      if (result.error) throw result.error;
+      setBrandLogo(logoToSave ?? "");
+      setBrandLogoFile(null);
       const loaded = await loadAll();
       if (loaded) showNotice("Identité de la marque enregistrée.");
+    } catch (saveError) {
+      showNotice(
+        "Impossible d'enregistrer le logo ou les paramètres : " +
+          (saveError instanceof Error ? saveError.message : "erreur inconnue"),
+        true
+      );
     }
 
     setSaving(false);
@@ -1547,7 +1651,8 @@ export default function App() {
                       const quantity = newOrderServices[service.id] ?? 0;
                       return (
                         <div className="row-item" key={service.id}>
-                          <label className="checkbox-row">
+                          <label className="checkbox-row service-choice-row">
+                            {service.icon_url && <img className="service-thumb" src={service.icon_url} alt="" />}
                             <input type="checkbox" checked={quantity > 0} onChange={(event) => toggleNewOrderService(service.id, event.target.checked)} />
                             <span><strong>{service.name}</strong> — {money(service.indicative_price)}</span>
                           </label>
@@ -1800,6 +1905,28 @@ export default function App() {
                   <Field label="Description">
                     <textarea className="input" value={serviceDescription} onChange={(event) => setServiceDescription(event.target.value)} rows={3} />
                   </Field>
+                  <Field label="Icône ou image du service (facultatif)">
+                    <input
+                      className="input"
+                      type="file"
+                      accept="image/*"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null;
+                        setServiceIconFile(file);
+                        if (file) setServiceIconRemoved(false);
+                      }}
+                    />
+                  </Field>
+                  {(serviceIconPreview || (!serviceIconRemoved && serviceIconUrl)) && (
+                    <div className="image-upload-preview">
+                      <img src={serviceIconPreview || serviceIconUrl} alt="Aperçu de l'icône du service" />
+                      <button type="button" className="btn btn-secondary btn-small" onClick={() => {
+                        setServiceIconFile(null);
+                        setServiceIconUrl("");
+                        setServiceIconRemoved(true);
+                      }}>Retirer l'image</button>
+                    </div>
+                  )}
                   <Field label="Tarif indicatif (FCFA)">
                     <input className="input" type="number" inputMode="numeric" min="0" step="1" value={servicePrice} onChange={(event) => setServicePrice(event.target.value)} required />
                   </Field>
@@ -1820,9 +1947,12 @@ export default function App() {
                   <div className="row-list">
                     {services.map((service) => (
                       <div key={service.id} className="row-item">
-                        <div className="row-main">
-                          <strong>{service.name}</strong>
-                          {service.description && <p>{service.description}</p>}
+                        <div className="row-main service-row-main">
+                          {service.icon_url && <img className="service-thumb service-thumb-large" src={service.icon_url} alt="" />}
+                          <div>
+                            <strong>{service.name}</strong>
+                            {service.description && <p>{service.description}</p>}
+                          </div>}
                           <div className="row-meta">
                             <span className="price">{money(service.indicative_price)}</span>
                             <span className={`badge ${service.is_active ? "badge-success" : "badge-neutral"}`}>
@@ -2100,21 +2230,27 @@ export default function App() {
                 <Field label="Slogan">
                   <input className="input" value={brandSlogan} onChange={(event) => setBrandSlogan(event.target.value)} />
                 </Field>
-                <Field label="Chemin du logo (adresse publique ou chemin de stockage)">
-                  <input className="input" value={brandLogo} onChange={(event) => setBrandLogo(event.target.value)} placeholder="Adresse du logo" />
+                <Field label="Importer le logo depuis le téléphone ou l'ordinateur">
+                  <input
+                    className="input"
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => setBrandLogoFile(event.target.files?.[0] ?? null)}
+                  />
                 </Field>
-                {brandLogo && (
+                {(brandLogoPreview || brandLogo) && (
                   <div className="logo-preview">
                     <p>Aperçu du logo</p>
-                    <img src={brandLogo} alt="Logo BAOBAB DIGITAL" />
+                    <img src={brandLogoPreview || brandLogo} alt="Logo BAOBAB DIGITAL" />
                   </div>
                 )}
+                <p className="help-text">L'image est automatiquement optimisée avant son enregistrement.</p>
                 <button className="btn btn-primary btn-large" disabled={saving}>
                   <Save size={18} /> Enregistrer les paramètres
                 </button>
               </form>
               <Notice>
-                Le champ du logo accepte actuellement une adresse ou un chemin existant. Le téléversement sécurisé du fichier logo sera ajouté séparément.
+                Formats acceptés selon la galerie : image. Le logo et les icônes sont optimisés puis enregistrés dans l'espace de stockage BAOBAB DIGITAL.
               </Notice>
             </>
           )}
