@@ -357,6 +357,34 @@ export default function App() {
   );
   const balance = revenue - totalExpenses;
 
+  const monthlyFinance = useMemo(() => {
+    const now = new Date();
+    return Array.from({ length: 6 }, (_, index) => {
+      const date = new Date(now.getFullYear(), now.getMonth() - 5 + index, 1);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+      const monthPayments = confirmedPayments
+        .filter((payment) => {
+          const paymentDate = new Date(payment.confirme_le ?? payment.created_at);
+          return `${paymentDate.getFullYear()}-${String(paymentDate.getMonth() + 1).padStart(2, "0")}` === key;
+        })
+        .reduce((sum, payment) => sum + payment.montant, 0);
+      const monthExpenses = expenses
+        .filter((expense) => expense.date_depense.slice(0, 7) === key)
+        .reduce((sum, expense) => sum + expense.montant, 0);
+      return {
+        key,
+        label: date.toLocaleDateString("fr-FR", { month: "short" }).replace(".", ""),
+        revenue: monthPayments,
+        expenses: monthExpenses,
+      };
+    });
+  }, [confirmedPayments, expenses]);
+
+  const monthlyMax = Math.max(
+    1,
+    ...monthlyFinance.flatMap((month) => [month.revenue, month.expenses])
+  );
+
   function showNotice(text: string, error = false) {
     setNotice(text);
     setErrorNotice(error);
@@ -1417,6 +1445,38 @@ export default function App() {
                   <p>Solde</p>
                   <strong>{money(balance)}</strong>
                 </article>
+              </div>
+
+              <div className="card finance-chart-card">
+                <div className="finance-chart-heading">
+                  <div>
+                    <h3 className="card-title">Évolution financière</h3>
+                    <p className="card-subtitle">Recettes encaissées et dépenses — 6 derniers mois</p>
+                  </div>
+                  <span className="finance-chart-unit">FCFA</span>
+                </div>
+                <div className="finance-chart-legend">
+                  <span><i className="legend-dot legend-revenue" /> Recettes</span>
+                  <span><i className="legend-dot legend-expenses" /> Dépenses</span>
+                </div>
+                <div className="finance-chart" role="img" aria-label="Graphique comparant les recettes encaissées et les dépenses des six derniers mois">
+                  {monthlyFinance.map((month) => (
+                    <div className="finance-chart-month" key={month.key}>
+                      <div className="finance-chart-bars">
+                        <div className="finance-bar-slot">
+                          <span className="finance-bar-value">{month.revenue > 0 ? new Intl.NumberFormat("fr-FR", { notation: "compact", maximumFractionDigits: 1 }).format(month.revenue) : ""}</span>
+                          <div className="finance-bar finance-bar-revenue" style={{ height: `${month.revenue > 0 ? Math.max(5, (month.revenue / monthlyMax) * 100) : 2}%` }} />
+                        </div>
+                        <div className="finance-bar-slot">
+                          <span className="finance-bar-value">{month.expenses > 0 ? new Intl.NumberFormat("fr-FR", { notation: "compact", maximumFractionDigits: 1 }).format(month.expenses) : ""}</span>
+                          <div className="finance-bar finance-bar-expenses" style={{ height: `${month.expenses > 0 ? Math.max(5, (month.expenses / monthlyMax) * 100) : 2}%` }} />
+                        </div>
+                      </div>
+                      <span className="finance-chart-label">{month.label}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="finance-chart-note">Les recettes sont calculées uniquement à partir des paiements confirmés.</p>
               </div>
 
               <h2 className="section-heading">Mon activité</h2>
