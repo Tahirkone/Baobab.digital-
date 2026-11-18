@@ -1952,7 +1952,7 @@ export default function App() {
                           <div>
                             <strong>{service.name}</strong>
                             {service.description && <p>{service.description}</p>}
-                          </div>}
+                          </div>
                           <div className="row-meta">
                             <span className="price">{money(service.indicative_price)}</span>
                             <span className={`badge ${service.is_active ? "badge-success" : "badge-neutral"}`}>
