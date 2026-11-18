@@ -72,7 +72,7 @@ export default function App(){
   return()=>{active=false;data.subscription.unsubscribe()};
  },[loadServices]);
  useEffect(()=>{if(session){setProfileName(String(session.user.user_metadata.full_name||""));setProfilePhone(String(session.user.user_metadata.phone||""));loadOrders().catch(e=>setNotice(e.message))}},[session,loadOrders]);
- useEffect(()=>{if(!session||!selected)return;const channel=supabase.channel("client-order-"+selected.id).on("postgres_changes",{event:"*",schema:"public",table:"messages",filter:"ordre_id=eq."+selected.id},()=>{loadOrder(selected).catch(()=>{})}).on("postgres_changes",{event:"*",schema:"public",table:"ordres",filter:"id=eq."+selected.id},()=>{refresh().catch(()=>{})}).subscribe();return()=>{supabase.removeChannel(channel)}},[session,selected,loadOrder,refresh]);
+ useEffect(()=>{if(!session||!selected)return;const channel=supabase.channel("client-order-"+selected.id).on("postgres_changes",{event:"*",schema:"public",table:"messages",filter:"ordre_id=eq."+selected.id},()=>{loadOrder(selected).catch(()=>{})}).on("postgres_changes",{event:"*",schema:"public",table:"ordres",filter:"id=eq."+selected.id},()=>{refresh().catch(()=>{})}).on("postgres_changes",{event:"*",schema:"public",table:"paiements",filter:"ordre_id=eq."+selected.id},()=>{refresh().catch(()=>{})}).subscribe();return()=>{supabase.removeChannel(channel)}},[session,selected,loadOrder,refresh]);
 
  function add(service:Service){setCart(c=>({...c,[service.id]:Math.min(20,(c[service.id]||0)+1)}));setNotice(service.name+" ajouté au panier.");}
  async function submitAuth(e:FormEvent){e.preventDefault();setAuthBusy(true);setNotice("");try{
