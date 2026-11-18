@@ -21,6 +21,9 @@ import {
   Plus,
   Printer,
   CheckCircle2,
+  Download,
+  MessageCircle,
+  Upload,
   Clock,
   TrendingUp,
   Archive,
@@ -114,6 +117,25 @@ type Brand = {
   nom_marque: string;
   slogan: string | null;
   chemin_logo: string | null;
+};
+
+type OrderFileAdmin = {
+  id: string;
+  ordre_id: string;
+  nom_fichier: string;
+  chemin_stockage: string;
+  type_fichier: string;
+  type_mime: string | null;
+  created_at: string;
+};
+
+type OrderMessageAdmin = {
+  id: string;
+  ordre_id: string;
+  expediteur: string;
+  contenu: string | null;
+  chemin_audio: string | null;
+  created_at: string;
 };
 
 const statusOptions = [
@@ -333,6 +355,9 @@ export default function App() {
   const [payments, setPayments] = useState<Payment[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [orderFiles, setOrderFiles] = useState<OrderFileAdmin[]>([]);
+  const [orderMessages, setOrderMessages] = useState<OrderMessageAdmin[]>([]);
+  const [adminMessage, setAdminMessage] = useState("");
   const [brand, setBrand] = useState<Brand | null>(null);
   const [search, setSearch] = useState("");
   const [selectedOrderId, setSelectedOrderId] = useState("");
@@ -535,6 +560,78 @@ export default function App() {
     return true;
   }
 
+  async function loadOrderExtras(orderId: string) {
+    const [filesResult, messagesResult] = await Promise.all([
+      supabase.from("fichiers_commandes").select("*").eq("ordre_id", orderId).order("created_at", { ascending: true }),
+      supabase.from("messages").select("*").eq("ordre_id", orderId).order("created_at", { ascending: true }),
+    ]);
+    if (filesResult.error || messagesResult.error) {
+      showNotice("Impossible de charger les fichiers ou les messages de cette commande.", true);
+      return;
+    }
+    setOrderFiles((filesResult.data ?? []) as OrderFileAdmin[]);
+    setOrderMessages((messagesResult.data ?? []) as OrderMessageAdmin[]);
+  }
+
+  async function uploadOrderDeliverable(file: File) {
+    if (!selectedOrder) return;
+    if (file.size > 10 * 1024 * 1024) {
+      showNotice("Le fichier dépasse la limite de 10 Mo.", true);
+      return;
+    }
+    setSaving(true);
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const path = `${selectedOrder.id}/deliverables/${Date.now()}-${safeName}`;
+    try {
+      const { error: uploadError } = await supabase.storage.from("baobab-client-files").upload(path, file, { contentType: file.type, upsert: false });
+      if (uploadError) throw uploadError;
+      const { error: rowError } = await supabase.from("fichiers_commandes").insert({
+        ordre_id: selectedOrder.id,
+        nom_fichier: file.name,
+        chemin_stockage: path,
+        type_fichier: "livrable",
+        type_mime: file.type || null,
+      });
+      if (rowError) {
+        await supabase.storage.from("baobab-client-files").remove([path]);
+        throw rowError;
+      }
+      await loadOrderExtras(selectedOrder.id);
+      showNotice("Document final ajouté. Le client pourra le télécharger après confirmation du paiement intégral.");
+    } catch (error) {
+      showNotice("Envoi du document impossible : " + (error instanceof Error ? error.message : "erreur inconnue"), true);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function sendAdminOrderMessage(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!selectedOrder || !adminMessage.trim()) return;
+    setSaving(true);
+    const { error } = await supabase.from("messages").insert({
+      ordre_id: selectedOrder.id,
+      expediteur: "admin",
+      contenu: adminMessage.trim(),
+    });
+    if (error) showNotice("Message non envoyé : " + error.message, true);
+    else {
+      setAdminMessage("");
+      await loadOrderExtras(selectedOrder.id);
+      showNotice("Message envoyé au client.");
+    }
+    setSaving(false);
+  }
+
+  async function openPrivateOrderFile(path: string) {
+    const { data, error } = await supabase.storage.from("baobab-client-files").createSignedUrl(path, 300);
+    if (error) {
+      showNotice("Téléchargement impossible : " + error.message, true);
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  }
+
   useEffect(() => {
     let active = true;
 
@@ -668,6 +765,8 @@ export default function App() {
     );
     showNotice("");
     loadOrderDetails(order.id);
+    loadOrderExtras(order.id);
+    setAdminMessage("");
   }
 
   function scrollToOrderDetail() {
@@ -1752,10 +1851,47 @@ export default function App() {
 
                         {selectedOrder.message_client && (
                           <div className="client-message">
-                            <strong>Message du client</strong>
+                            <strong>Message initial du client</strong>
                             <p>{selectedOrder.message_client}</p>
                           </div>
                         )}
+
+                        <hr />
+                        <h4 className="sub-title">Fichiers du client et documents à livrer</h4>
+                        <label className="btn btn-secondary btn-small admin-file-upload">
+                          <Upload size={16} /> Ajouter un document final
+                          <input type="file" accept="image/jpeg,image/png,image/webp,application/pdf,.doc,.docx" disabled={saving} onChange={(event) => {
+                            const file = event.currentTarget.files?.[0];
+                            if (file) void uploadOrderDeliverable(file);
+                            event.currentTarget.value = "";
+                          }} />
+                        </label>
+                        <p className="help-text">Les documents finaux restent privés et ne deviennent téléchargeables par le client qu'après confirmation du paiement intégral.</p>
+                        {orderFiles.length === 0 ? <p className="empty-text">Aucun fichier joint à cette commande.</p> : (
+                          <div className="admin-order-files">
+                            {orderFiles.map((file) => (
+                              <div className="admin-order-file" key={file.id}>
+                                <span><strong>{file.nom_fichier}</strong><small>{file.type_fichier === "livrable" ? "Document final" : file.type_fichier === "preuve_paiement" ? "Preuve de paiement" : "Fichier original"}</small></span>
+                                <button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(file.chemin_stockage)}><Download size={15} /> Ouvrir</button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        <h4 className="sub-title"><MessageCircle size={16} /> Conversation avec le client</h4>
+                        <div className="admin-order-chat">
+                          {orderMessages.length === 0 ? <p className="empty-text">Aucun message pour le moment.</p> : orderMessages.map((item) => (
+                            <div className={item.expediteur === "admin" ? "admin-chat-message admin" : "admin-chat-message client"} key={item.id}>
+                              <small>{item.expediteur === "admin" ? "BAOBAB DIGITAL" : "Client"} · {dateText(item.created_at)}</small>
+                              {item.contenu && <p>{item.contenu}</p>}
+                              {item.chemin_audio && <button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(item.chemin_audio!)}>Écouter le vocal</button>}
+                            </div>
+                          ))}
+                        </div>
+                        <form className="admin-chat-form" onSubmit={sendAdminOrderMessage}>
+                          <textarea className="input" value={adminMessage} onChange={(event) => setAdminMessage(event.target.value)} placeholder="Répondre au client…" maxLength={2000} />
+                          <button className="btn btn-primary btn-small" disabled={saving || !adminMessage.trim()}><MessageCircle size={15} /> Envoyer</button>
+                        </form>
 
                         <hr />
                         <Field label="Montant final (FCFA)">

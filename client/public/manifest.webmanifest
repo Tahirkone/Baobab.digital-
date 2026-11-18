@@ -1,0 +1,18 @@
+{
+  "name": "BAOBAB DIGITAL CLIENT",
+  "short_name": "Baobab Client",
+  "description": "Vos services numériques à portée de main.",
+  "lang": "fr",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f7f8f5",
+  "theme_color": "#0f3d2e",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
