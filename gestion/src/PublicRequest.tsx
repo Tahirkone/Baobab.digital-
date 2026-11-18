@@ -8,6 +8,7 @@ type PublicService = {
   name: string;
   description: string | null;
   indicative_price: number;
+  icon_url: string | null;
 };
 
 declare global {
@@ -46,7 +47,7 @@ export default function PublicRequest() {
   useEffect(() => {
     let alive = true;
     supabase.from("services")
-      .select("id,name,description,indicative_price")
+      .select("id,name,description,indicative_price,icon_url")
       .eq("is_active", true)
       .order("name")
       .then(({ data, error: loadError }) => {
@@ -220,6 +221,7 @@ export default function PublicRequest() {
                   return (
                     <div className="public-service" key={service.id}>
                       <label className="public-service-choice">
+                        {service.icon_url && <img className="public-service-icon" src={service.icon_url} alt="" />}
                         <input type="checkbox" checked={quantity > 0} onChange={(event) => setQuantities((previous) => ({ ...previous, [service.id]: event.target.checked ? 1 : 0 }))} />
                         <span><strong>{service.name}</strong>{service.description && <small>{service.description}</small>}<small>{service.indicative_price.toLocaleString("fr-FR")} FCFA / unité</small></span>
                       </label>
