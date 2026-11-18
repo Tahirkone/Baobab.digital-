@@ -4,6 +4,12 @@ on:
     paths:
       - "client/**"
       - ".github/workflows/client-build.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "client/**"
+      - ".github/workflows/client-build.yml"
 jobs:
   build:
     runs-on: ubuntu-latest
