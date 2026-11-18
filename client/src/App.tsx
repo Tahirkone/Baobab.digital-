@@ -1,147 +1,135 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { ArrowRight, BriefcaseBusiness, CheckCircle2, ChevronDown, CircleUserRound, FileText, Headphones, LogIn, LogOut, Menu, Plus, ShieldCheck, ShoppingBag, Sparkles, TreeDeciduous, UserPlus, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Bell, Check, CheckCircle2, CircleUserRound, Clock3, Download, FileText, Headphones, LogOut, Menu, MessageCircle, Mic, Paperclip, Plus, Send, ShieldCheck, ShoppingBag, TreeDeciduous, Upload, X } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "./lib/supabase";
 
-type Service = { id: string; name: string; description: string | null; indicative_price: number; icon_url: string | null };
-type Brand = { nom_marque: string; slogan: string | null; chemin_logo: string | null };
+type Service={id:string;name:string;description:string|null;indicative_price:number;icon_url:string|null};
+type Brand={nom_marque:string;slogan:string|null;chemin_logo:string|null};
+type Order={id:string;reference:string;nom_client:string;telephone_client:string;montant_final:number|null;statut:string;statut_paiement:string;message_client:string|null;created_at:string;option_paiement_espece:string|null};
+type Detail={id:string;nom_service:string;prix_indicatif:number;quantite:number};
+type Message={id:string;expediteur:string;contenu:string|null;chemin_audio:string|null;created_at:string};
+type OrderFile={id:string;nom_fichier:string;chemin_stockage:string;type_fichier:string;type_mime:string|null;created_at:string};
+type Payment={id:string;methode:string;montant:number;statut:string;reference_transaction:string|null;created_at:string};
+const BUCKET="baobab-client-files";
+const money=(n:number)=>new Intl.NumberFormat("fr-FR").format(n)+" FCFA";
+const date=(v:string)=>new Date(v).toLocaleString("fr-FR",{dateStyle:"medium",timeStyle:"short"});
+const statusLabel=(s:string)=>({nouveau:"Nouvelle demande",a_clarifier:"À clarifier",attente_validation_prix:"Prix à confirmer",attente_paiement:"En attente de paiement",paye:"Payée",en_cours:"En cours",attente_validation_client:"À valider",termine:"Terminée",livre:"Livrée",annule:"Annulée"}[s]||s);
+const statusClass=(s:string)=>["paye","livre","termine"].includes(s)?"good":["annule"].includes(s)?"bad":"pending";
 
-const money = (value: number) => new Intl.NumberFormat("fr-FR").format(value) + " FCFA";
+export default function App(){
+ const [session,setSession]=useState<Session|null>(null);
+ const [services,setServices]=useState<Service[]>([]);
+ const [brand,setBrand]=useState<Brand>({nom_marque:"BAOBAB DIGITAL",slogan:"Le numérique à votre portée.",chemin_logo:null});
+ const [loading,setLoading]=useState(true);
+ const [authOpen,setAuthOpen]=useState(false);
+ const [authMode,setAuthMode]=useState<"login"|"signup">("signup");
+ const [email,setEmail]=useState("");const [password,setPassword]=useState("");const [fullName,setFullName]=useState("");const [phone,setPhone]=useState("");
+ const [authBusy,setAuthBusy]=useState(false);
+ const [notice,setNotice]=useState("");
+ const [cart,setCart]=useState<Record<string,number>>({});
+ const [page,setPage]=useState<"home"|"orders"|"profile">("home");
+ const [orders,setOrders]=useState<Order[]>([]);
+ const [selected,setSelected]=useState<Order|null>(null);
+ const [details,setDetails]=useState<Detail[]>([]);
+ const [messages,setMessages]=useState<Message[]>([]);
+ const [files,setFiles]=useState<OrderFile[]>([]);
+ const [payments,setPayments]=useState<Payment[]>([]);
+ const [messageText,setMessageText]=useState("");
+ const [busy,setBusy]=useState(false);
+ const [profileName,setProfileName]=useState("");const [profilePhone,setProfilePhone]=useState("");
+ const [orderMessage,setOrderMessage]=useState("");
+ const [paymentMethod,setPaymentMethod]=useState<"orange_money"|"especes">("orange_money");
+ const [cashOption,setCashOption]=useState<"avant_livraison"|"au_retrait">("avant_livraison");
+ const [transactionRef,setTransactionRef]=useState("");
+ const [recording,setRecording]=useState(false);
+ const recorder=useRef<MediaRecorder|null>(null);
+ const audioChunks=useRef<Blob[]>([]);
+ const count=useMemo(()=>Object.values(cart).reduce((a,b)=>a+b,0),[cart]);
+ const indicative=useMemo(()=>services.reduce((a,s)=>a+s.indicative_price*(cart[s.id]||0),0),[services,cart]);
 
-export default function App() {
-  const [session, setSession] = useState<Session | null>(null);
-  const [services, setServices] = useState<Service[]>([]);
-  const [brand, setBrand] = useState<Brand>({ nom_marque: "BAOBAB DIGITAL", slogan: "Le numérique à votre portée.", chemin_logo: null });
-  const [loading, setLoading] = useState(true);
-  const [authOpen, setAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState<"login" | "signup">("signup");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
-  const [phone, setPhone] = useState("");
-  const [authBusy, setAuthBusy] = useState(false);
-  const [notice, setNotice] = useState("");
-  const [cart, setCart] = useState<Record<string, number>>({});
-  const [mobileMenu, setMobileMenu] = useState(false);
+ const loadServices=useCallback(async()=>{const {data,error}=await supabase.from("services").select("id,name,description,indicative_price,icon_url").eq("is_active",true).order("created_at");if(error)throw error;setServices((data||[]) as Service[])},[]);
+ const loadOrders=useCallback(async()=>{if(!session)return;const {data,error}=await supabase.from("ordres").select("id,reference,nom_client,telephone_client,montant_final,statut,statut_paiement,message_client,created_at,option_paiement_espece").order("created_at",{ascending:false});if(error)throw error;setOrders((data||[]) as Order[])},[session]);
+ const loadOrder=useCallback(async(order:Order)=>{
+  setSelected(order);
+  const [d,m,f,p]=await Promise.all([
+   supabase.from("details_commandes").select("id,nom_service,prix_indicatif,quantite").eq("ordre_id",order.id).order("created_at"),
+   supabase.from("messages").select("id,expediteur,contenu,chemin_audio,created_at").eq("ordre_id",order.id).order("created_at"),
+   supabase.from("fichiers_commandes").select("id,nom_fichier,chemin_stockage,type_fichier,type_mime,created_at").eq("ordre_id",order.id).order("created_at"),
+   supabase.from("paiements").select("id,methode,montant,statut,reference_transaction,created_at").eq("ordre_id",order.id).order("created_at",{ascending:false})
+  ]);
+  if(d.error||m.error||f.error||p.error)throw d.error||m.error||f.error||p.error;
+  setDetails((d.data||[]) as Detail[]);setMessages((m.data||[]) as Message[]);setFiles((f.data||[]) as OrderFile[]);setPayments((p.data||[]) as Payment[]);
+ },[]);
+ const refresh=useCallback(async()=>{await loadOrders();if(selected){const fresh=await supabase.from("ordres").select("id,reference,nom_client,telephone_client,montant_final,statut,statut_paiement,message_client,created_at,option_paiement_espece").eq("id",selected.id).single();if(!fresh.error)await loadOrder(fresh.data as Order)}},[loadOrders,loadOrder,selected]);
 
-  useEffect(() => {
-    let active = true;
-    Promise.all([
-      supabase.auth.getSession(),
-      supabase.from("services").select("id,name,description,indicative_price,icon_url").eq("is_active", true).order("created_at", { ascending: true }),
-      supabase.from("parametres_marque").select("nom_marque,slogan,chemin_logo").limit(1).maybeSingle()
-    ]).then(([auth, serviceResult, brandResult]) => {
-      if (!active) return;
-      setSession(auth.data.session);
-      if (serviceResult.error) setNotice("Le catalogue n'est pas encore disponible. Réessaie dans un instant.");
-      else setServices((serviceResult.data ?? []) as Service[]);
-      if (brandResult.data) setBrand(brandResult.data as Brand);
-      setLoading(false);
-    }).catch(() => { if (active) { setNotice("Connexion temporairement indisponible."); setLoading(false); } });
-    const { data } = supabase.auth.onAuthStateChange((_event, next) => setSession(next));
-    return () => { active = false; data.subscription.unsubscribe(); };
-  }, []);
+ useEffect(()=>{
+  let active=true;
+  Promise.all([supabase.auth.getSession(),loadServices(),supabase.from("parametres_marque").select("nom_marque,slogan,chemin_logo").limit(1).maybeSingle()])
+   .then(([auth,_services,b])=>{if(!active)return;setSession(auth.data.session);if(b.data)setBrand(b.data as Brand);setLoading(false)})
+   .catch(e=>{if(active){setNotice(e instanceof Error?e.message:"Connexion temporairement indisponible.");setLoading(false)}});
+  const {data}=supabase.auth.onAuthStateChange((_event,next)=>{setSession(next);if(!next){setOrders([]);setSelected(null);setPage("home")}});
+  return()=>{active=false;data.subscription.unsubscribe()};
+ },[loadServices]);
+ useEffect(()=>{if(session){setProfileName(String(session.user.user_metadata.full_name||""));setProfilePhone(String(session.user.user_metadata.phone||""));loadOrders().catch(e=>setNotice(e.message))}},[session,loadOrders]);
+ useEffect(()=>{if(!session||!selected)return;const channel=supabase.channel("client-order-"+selected.id).on("postgres_changes",{event:"*",schema:"public",table:"messages",filter:"ordre_id=eq."+selected.id},()=>{loadOrder(selected).catch(()=>{})}).on("postgres_changes",{event:"*",schema:"public",table:"ordres",filter:"id=eq."+selected.id},()=>{refresh().catch(()=>{})}).subscribe();return()=>{supabase.removeChannel(channel)}},[session,selected,loadOrder,refresh]);
 
-  const count = useMemo(() => Object.values(cart).reduce((sum, quantity) => sum + quantity, 0), [cart]);
-  const total = useMemo(() => services.reduce((sum, service) => sum + service.indicative_price * (cart[service.id] ?? 0), 0), [services, cart]);
+ function add(service:Service){setCart(c=>({...c,[service.id]:Math.min(20,(c[service.id]||0)+1)}));setNotice(service.name+" ajouté au panier.");}
+ async function submitAuth(e:FormEvent){e.preventDefault();setAuthBusy(true);setNotice("");try{
+  if(authMode==="signup"){const {data,error}=await supabase.auth.signUp({email,password,options:{data:{full_name:fullName,phone}}});if(error)throw error;if(data.session)setNotice("Compte créé. Bienvenue !");else setNotice("Compte créé. Vérifie ton e-mail pour confirmer ton inscription.");}
+  else{const {error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;setNotice("Connexion réussie.");}
+  setAuthOpen(false);setPassword("");
+ }catch(e){setNotice(e instanceof Error?e.message:"Une erreur est survenue.")}finally{setAuthBusy(false)}}
+ async function signOut(){await supabase.auth.signOut();setNotice("Tu es déconnecté.");}
+ async function submitOrder(e:FormEvent){e.preventDefault();if(!session){setAuthMode("signup");setAuthOpen(true);return}setBusy(true);try{
+  const items=services.filter(s=>(cart[s.id]||0)>0).map(s=>({service_id:s.id,quantity:cart[s.id]}));
+  const {data,error}=await supabase.rpc("creer_commande_client",{p_items:items,p_message:orderMessage});
+  if(error)throw error;setCart({});setOrderMessage("");setNotice("Demande envoyée ! Référence : "+data.reference);await loadOrders();const {data:o,error:oe}=await supabase.from("ordres").select("id,reference,nom_client,telephone_client,montant_final,statut,statut_paiement,message_client,created_at,option_paiement_espece").eq("id",data.id).single();if(!oe){await loadOrder(o as Order);setPage("orders")}
+ }catch(e){setNotice(e instanceof Error?e.message:"Impossible d'envoyer la demande.")}finally{setBusy(false)}}
+ async function sendMessage(e:FormEvent){e.preventDefault();if(!selected||!messageText.trim())return;setBusy(true);try{const {error}=await supabase.rpc("client_envoyer_message",{p_ordre_id:selected.id,p_contenu:messageText.trim(),p_chemin_audio:null});if(error)throw error;setMessageText("");await loadOrder(selected)}catch(e){setNotice(e instanceof Error?e.message:"Message non envoyé.")}finally{setBusy(false)}}
+ async function uploadFile(file:File,kind:"original"|"preuve_paiement"="original"){
+  if(!selected)throw new Error("Aucune commande sélectionnée.");if(file.size>10*1024*1024)throw new Error("Fichier trop volumineux : maximum 10 Mo.");
+  const allowed=["image/jpeg","image/png","image/webp","application/pdf","application/msword","application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
+  if(kind==="original"&&!allowed.includes(file.type))throw new Error("Format non accepté. Utilise une image, un PDF ou un document Word.");
+  const folder=kind==="original"?"originals":"payment-proofs";const safe=file.name.replace(/[^a-zA-Z0-9._-]/g,"_");const path=selected.id+"/"+folder+"/"+Date.now()+"-"+safe;
+  const {error}=await supabase.storage.from(BUCKET).upload(path,file,{contentType:file.type,upsert:false});if(error)throw error;
+  const {error:metaError}=await supabase.rpc("client_ajouter_fichier",{p_ordre_id:selected.id,p_nom:file.name,p_chemin:path,p_type_mime:file.type,p_type:kind});if(metaError){await supabase.storage.from(BUCKET).remove([path]);throw metaError}
+  await loadOrder(selected);setNotice("Fichier envoyé avec succès.");
+ }
+ async function choosePayment(e:FormEvent){e.preventDefault();if(!selected)return;setBusy(true);try{
+  const {error}=await supabase.rpc("client_choisir_paiement",{p_ordre_id:selected.id,p_methode:paymentMethod,p_option_espece:paymentMethod==="especes"?cashOption:null,p_reference_transaction:paymentMethod==="orange_money"?transactionRef:null});if(error)throw error;
+  setNotice(paymentMethod==="orange_money"?"Demande de paiement Orange Money enregistrée. Notre équipe vérifiera le règlement.":"Ton choix de paiement en espèces a été enregistré.");setTransactionRef("");await refresh();
+ }catch(e){setNotice(e instanceof Error?e.message:"Impossible d'enregistrer le choix.")}finally{setBusy(false)}}
+ async function sendAudio(blob:Blob){if(!selected) return;setBusy(true);try{const path=selected.id+"/messages/"+Date.now()+".webm";const {error}=await supabase.storage.from(BUCKET).upload(path,blob,{contentType:blob.type||"audio/webm"});if(error)throw error;const {error:msgError}=await supabase.rpc("client_envoyer_message",{p_ordre_id:selected.id,p_contenu:null,p_chemin_audio:path});if(msgError)throw msgError;await loadOrder(selected);setNotice("Message vocal envoyé.")}catch(e){setNotice(e instanceof Error?e.message:"Envoi vocal impossible.")}finally{setBusy(false)}}
+ async function toggleRecording(){if(recording){recorder.current?.stop();setRecording(false);return}try{const stream=await navigator.mediaDevices.getUserMedia({audio:true});const r=new MediaRecorder(stream);recorder.current=r;audioChunks.current=[];r.ondataavailable=e=>{if(e.data.size)audioChunks.current.push(e.data)};r.onstop=()=>{stream.getTracks().forEach(t=>t.stop());const blob=new Blob(audioChunks.current,{type:r.mimeType||"audio/webm"});if(blob.size)sendAudio(blob)};r.start();setRecording(true)}catch{setNotice("Autorise le micro dans les réglages du navigateur pour envoyer un vocal.")}}
+ async function signedUrl(path:string){const {data,error}=await supabase.storage.from(BUCKET).createSignedUrl(path,300);if(error)throw error;return data.signedUrl}
+ async function downloadFile(f:OrderFile){try{const url=await signedUrl(f.chemin_stockage);window.open(url,"_blank","noopener,noreferrer")}catch(e){setNotice(e instanceof Error?e.message:"Téléchargement indisponible.")}}
+ async function downloadAudio(path:string){try{const url=await signedUrl(path);window.open(url,"_blank","noopener,noreferrer")}catch(e){setNotice(e instanceof Error?e.message:"Audio indisponible.")}}
+ async function saveProfile(e:FormEvent){e.preventDefault();setBusy(true);try{const {error}=await supabase.from("clients").update({nom_complet:profileName,telephone:profilePhone,updated_at:new Date().toISOString()}).eq("user_id",session?.user.id);if(error)throw error;const {error:authError}=await supabase.auth.updateUser({data:{full_name:profileName,phone:profilePhone}});if(authError)throw authError;setNotice("Profil mis à jour.")}catch(e){setNotice(e instanceof Error?e.message:"Profil non modifié.")}finally{setBusy(false)}}
 
-  function add(service: Service) {
-    setCart((current) => ({ ...current, [service.id]: (current[service.id] ?? 0) + 1 }));
-    setNotice(service.name + " ajouté au panier.");
-  }
-
-  async function submitAuth(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setAuthBusy(true); setNotice("");
-    try {
-      if (authMode === "signup") {
-        const { data, error } = await supabase.auth.signUp({ email, password, options: { data: { full_name: fullName, phone } } });
-        if (error) throw error;
-        if (data.session) setNotice("Compte créé. Bienvenue chez BAOBAB DIGITAL !");
-        else setNotice("Compte créé. Vérifie ton adresse e-mail pour confirmer ton inscription.");
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        setNotice("Connexion réussie.");
-      }
-      setAuthOpen(false); setPassword("");
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : "Une erreur est survenue.");
-    } finally { setAuthBusy(false); }
-  }
-
-  async function signOut() { await supabase.auth.signOut(); setNotice("Tu es déconnecté."); }
-
-  return (
-    <div className="app-shell">
-      <header className="topbar">
-        <a className="brand" href="#accueil" aria-label="BAOBAB DIGITAL accueil">
-          {brand.chemin_logo ? <img src={brand.chemin_logo} alt="" /> : <span className="brand-icon"><TreeDeciduous size={27} /></span>}
-          <span><strong>{brand.nom_marque}</strong><small>ESPACE CLIENT</small></span>
-        </a>
-        <button className="mobile-toggle" onClick={() => setMobileMenu(!mobileMenu)} aria-label="Ouvrir le menu">{mobileMenu ? <X/> : <Menu/>}</button>
-        <nav className={mobileMenu ? "nav nav-open" : "nav"}>
-          <a href="#services" onClick={() => setMobileMenu(false)}>Nos services</a>
-          <a href="#fonctionnement" onClick={() => setMobileMenu(false)}>Comment ça marche</a>
-          <a href="#contact" onClick={() => setMobileMenu(false)}>Contact</a>
-        </nav>
-        <div className="top-actions">
-          <button className="cart-button" onClick={() => setNotice(count ? "Ton panier contient " + count + " prestation(s), pour un total indicatif de " + money(total) + "." : "Ton panier est vide.")}><ShoppingBag size={18}/><span>Panier</span>{count > 0 && <b>{count}</b>}</button>
-          {session ? <button className="account-button" onClick={signOut}><LogOut size={17}/> Déconnexion</button> : <button className="account-button" onClick={() => { setAuthMode("login"); setAuthOpen(true); }}><CircleUserRound size={18}/> Mon compte</button>}
-        </div>
-      </header>
-
-      <main>
-        <section className="hero" id="accueil">
-          <div className="hero-copy">
-            <span className="eyebrow"><Sparkles size={15}/> VOS SERVICES NUMÉRIQUES</span>
-            <h1>Vos démarches,<br/><em>plus simples.</em></h1>
-            <p>{brand.slogan || "Le numérique à votre portée."} Commandez vos documents et prestations en quelques étapes, directement depuis votre téléphone.</p>
-            <div className="hero-buttons"><a className="primary-button" href="#services">Découvrir nos services <ArrowRight size={18}/></a><a className="text-button" href="#fonctionnement">Comment ça marche ?</a></div>
-            <div className="trust-line"><ShieldCheck size={17}/> Un suivi clair et un échange direct avec notre équipe</div>
-          </div>
-          <div className="hero-art">
-            <div className="art-circle"></div>
-            <div className="document-card"><div className="doc-head"><span className="doc-mark"><TreeDeciduous/></span><span>BAOBAB DIGITAL</span></div><div className="doc-line wide"></div><div className="doc-line"></div><div className="doc-line short"></div><div className="doc-photo"></div><div className="doc-line wide"></div><div className="doc-line"></div><div className="doc-stamp"><CheckCircle2/> SIMPLE & PRATIQUE</div></div>
-            <div className="floating-note"><CheckCircle2 size={18}/> Commande simplifiée</div>
-          </div>
-        </section>
-
-        <section className="service-section" id="services">
-          <div className="section-intro"><div><span className="eyebrow">NOS PRESTATIONS</span><h2>De quoi as-tu besoin ?</h2><p>Choisis une ou plusieurs prestations. Les prix affichés sont indicatifs.</p></div><span className="catalog-count">{services.length} service(s)</span></div>
-          {notice && <div className="notice"><span>{notice}</span><button onClick={() => setNotice("")} aria-label="Fermer"><X size={16}/></button></div>}
-          {loading ? <div className="loading">Chargement du catalogue…</div> : services.length === 0 ? <div className="empty-state"><BriefcaseBusiness size={28}/><strong>Le catalogue arrive bientôt</strong><span>Nos prestations seront affichées ici.</span></div> :
-            <div className="service-grid">{services.map((service) => <article className="service-card" key={service.id}>
-              <div className="service-icon">{service.icon_url ? <img src={service.icon_url} alt=""/> : <FileText size={25}/>}</div>
-              <div className="service-card-body"><h3>{service.name}</h3><p>{service.description || "Une prestation réalisée avec soin par BAOBAB DIGITAL."}</p><div className="service-bottom"><div><small>À partir de</small><strong>{money(service.indicative_price)}</strong></div><button onClick={() => add(service)} aria-label={"Ajouter " + service.name}><Plus size={19}/></button></div></div>
-              {cart[service.id] > 0 && <span className="quantity-pill">{cart[service.id]} dans le panier</span>}
-            </article>)}</div>
-          }
-          <div className="cart-summary"><div><span>Ton panier</span><strong>{count} prestation(s) · {money(total)}</strong><small>Le montant définitif sera confirmé par BAOBAB DIGITAL.</small></div><button onClick={() => { if (!count) setNotice("Ajoute d'abord une prestation à ton panier."); else if (!session) { setAuthMode("signup"); setAuthOpen(true); setNotice("Connecte-toi ou crée un compte pour continuer."); } else setNotice("Ton compte est connecté. Le formulaire de commande sera activé dans la prochaine étape."); }}>Continuer <ArrowRight size={17}/></button></div>
-        </section>
-
-        <section className="steps-section" id="fonctionnement"><span className="eyebrow">C'EST SIMPLE</span><h2>Comment ça marche ?</h2><div className="steps-grid">
-          <div className="step"><span>01</span><ShoppingBag/><h3>Choisis tes services</h3><p>Ajoute les prestations dont tu as besoin à ton panier.</p></div>
-          <div className="step"><span>02</span><UserPlus/><h3>Envoie ta demande</h3><p>Renseigne tes coordonnées et transmets les informations utiles.</p></div>
-          <div className="step"><span>03</span><Headphones/><h3>Nous te répondons</h3><p>Notre équipe confirme les détails et le prix définitif.</p></div>
-          <div className="step"><span>04</span><CheckCircle2/><h3>Reçois ton travail</h3><p>Après confirmation du paiement intégral, récupère ton document.</p></div>
-        </div></section>
-        <section className="contact-strip" id="contact"><div><span className="eyebrow">UNE QUESTION ?</span><h2>Nous sommes là pour t'aider.</h2><p>BAOBAB DIGITAL · Le numérique à votre portée.</p></div><a href="https://wa.me/" target="_blank" rel="noreferrer">Contacter notre équipe <ArrowRight size={18}/></a></section>
-      </main>
-      <footer><span>© {new Date().getFullYear()} {brand.nom_marque}</span><span>Burkina Faso · Tous droits réservés</span></footer>
-
-      {authOpen && <div className="modal-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setAuthOpen(false); }}><section className="auth-modal">
-        <button className="modal-close" onClick={() => setAuthOpen(false)} aria-label="Fermer"><X/></button>
-        <span className="modal-symbol"><TreeDeciduous size={28}/></span><span className="eyebrow">ESPACE CLIENT</span><h2>{authMode === "signup" ? "Créer mon compte" : "Heureux de te revoir"}</h2><p>{authMode === "signup" ? "Inscris-toi pour suivre tes demandes et retrouver tes reçus." : "Connecte-toi pour accéder à ton espace client."}</p>
-        <form onSubmit={submitAuth}>
-          {authMode === "signup" && <><label>Nom complet<input value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" required placeholder="Ton nom et prénom"/></label><label>Téléphone<input value={phone} onChange={(e) => setPhone(e.target.value)} autoComplete="tel" required placeholder="+226 …"/></label></>}
-          <label>Adresse e-mail<input type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" required placeholder="exemple@email.com"/></label>
-          <label>Mot de passe<input type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete={authMode === "signup" ? "new-password" : "current-password"} minLength={8} required placeholder="8 caractères minimum"/></label>
-          <button className="primary-button full-button" disabled={authBusy}>{authBusy ? "Patiente…" : authMode === "signup" ? "Créer mon compte" : "Me connecter"} <ArrowRight size={17}/></button>
-        </form>
-        <div className="switch-auth">{authMode === "signup" ? "Tu as déjà un compte ?" : "Tu n'as pas encore de compte ?"} <button onClick={() => setAuthMode(authMode === "signup" ? "login" : "signup")}>{authMode === "signup" ? "Se connecter" : "Créer un compte"}</button></div>
-      </section></div>}
-    </div>
-  );
+ return <div className="app-shell">
+  <header className="topbar"><a className="brand" href="#accueil" onClick={()=>{setPage("home");setSelected(null)}}>{brand.chemin_logo?<img src={brand.chemin_logo} alt=""/>:<span className="brand-icon"><TreeDeciduous size={27}/></span>}<span><strong>{brand.nom_marque}</strong><small>ESPACE CLIENT</small></span></a>
+   <nav className="nav"><button onClick={()=>{setPage("home");setSelected(null)}}>Accueil</button><button onClick={()=>{setPage("home");document.getElementById("services")?.scrollIntoView({behavior:"smooth"})}}>Nos services</button>{session&&<button onClick={()=>{setPage("orders");setSelected(null)}}>Mes commandes</button>}</nav>
+   <div className="top-actions">{session?<><button className="account-button" onClick={()=>setPage("profile")}><CircleUserRound size={17}/> Mon espace</button><button className="icon-button" onClick={signOut} title="Déconnexion"><LogOut size={17}/></button></>:<button className="account-button" onClick={()=>{setAuthMode("login");setAuthOpen(true)}}>Se connecter</button>}</div>
+  </header>
+  <main>
+   {page==="home"&&!selected&&<><section className="hero" id="accueil"><div className="hero-copy"><span className="eyebrow"><ShieldCheck size={15}/> VOS SERVICES NUMÉRIQUES</span><h1>Vos démarches,<br/><em>plus simples.</em></h1><p>{brand.slogan||"Le numérique à votre portée."} Commande tes documents et prestations en quelques étapes, directement depuis ton téléphone.</p><div className="hero-buttons"><a className="primary-button" href="#services">Découvrir nos services <ArrowRight size={18}/></a>{session?<button className="text-button" onClick={()=>setPage("orders")}>Suivre mes commandes</button>:<button className="text-button" onClick={()=>{setAuthMode("signup");setAuthOpen(true)}}>Créer mon compte</button>}</div><div className="trust-line"><ShieldCheck size={17}/> Tes commandes et documents restent privés</div></div><div className="hero-art"><div className="art-circle"/><div className="document-card"><div className="doc-head"><span className="doc-mark"><TreeDeciduous/></span><span>BAOBAB DIGITAL</span></div><div className="doc-line wide"/><div className="doc-line"/><div className="doc-line short"/><div className="doc-photo"/><div className="doc-line wide"/><div className="doc-line"/><div className="doc-stamp"><CheckCircle2/> SIMPLE & PRATIQUE</div></div><div className="floating-note"><CheckCircle2 size={18}/> Commande simplifiée</div></div></section>
+   <section className="service-section" id="services"><div className="section-intro"><div><span className="eyebrow">NOS PRESTATIONS</span><h2>De quoi as-tu besoin ?</h2><p>Choisis une ou plusieurs prestations. Les prix sont indicatifs.</p></div><span className="catalog-count">{services.length} service(s)</span></div>
+    {notice&&<div className="notice"><span>{notice}</span><button onClick={()=>setNotice("")}><X size={16}/></button></div>}
+    {loading?<div className="loading">Chargement du catalogue…</div>:services.length===0?<div className="empty-state"><FileText/><strong>Le catalogue arrive bientôt</strong><span>Nos prestations seront affichées ici.</span></div>:<div className="service-grid">{services.map(s=><article className="service-card" key={s.id}><div className="service-icon">{s.icon_url?<img src={s.icon_url} alt=""/>:<FileText size={25}/>}</div><div className="service-card-body"><h3>{s.name}</h3><p>{s.description||"Une prestation réalisée avec soin par BAOBAB DIGITAL."}</p><div className="service-bottom"><div><small>Prix indicatif</small><strong>{money(s.indicative_price)}</strong></div><button onClick={()=>add(s)} aria-label={"Ajouter "+s.name}><Plus size={19}/></button></div></div>{cart[s.id]>0&&<span className="quantity-pill">{cart[s.id]} dans le panier</span>}</article>)}</div>}
+    <div className="cart-summary"><div><span>Ton panier</span><strong>{count} prestation(s) · {money(indicative)}</strong><small>Le prix définitif sera confirmé par notre équipe.</small></div><button onClick={()=>{if(!count){setNotice("Ajoute une prestation au panier.");return}document.getElementById("order-form")?.scrollIntoView({behavior:"smooth"})}}>Passer commande <ArrowRight size={17}/></button></div>
+    {count>0&&<form className="order-form" id="order-form" onSubmit={submitOrder}><div><span className="eyebrow">FINALISER LA DEMANDE</span><h3>Quelques précisions</h3><p>Connecte-toi pour envoyer ta demande et retrouver son suivi.</p></div><label>Informations complémentaires<textarea value={orderMessage} onChange={e=>setOrderMessage(e.target.value)} maxLength={2000} placeholder="Décris ton besoin, les détails du document ou les consignes utiles…"/></label><button className="primary-button" disabled={busy}>{busy?"Envoi…":"Envoyer ma demande"} <ArrowRight size={17}/></button></form>}
+   </section>
+   <section className="steps-section"><span className="eyebrow">C'EST SIMPLE</span><h2>Comment ça marche ?</h2><div className="steps-grid"><div className="step"><span>01</span><ShoppingBag/><h3>Choisis tes services</h3><p>Ajoute les prestations à ton panier.</p></div><div className="step"><span>02</span><Send/><h3>Envoie ta demande</h3><p>Transmets tes informations et tes fichiers.</p></div><div className="step"><span>03</span><MessageCircle/><h3>Échange avec nous</h3><p>Nous confirmons les détails et le prix définitif.</p></div><div className="step"><span>04</span><CheckCircle2/><h3>Récupère ton travail</h3><p>Après paiement intégral confirmé, télécharge ton document.</p></div></div></section></>}
+   {page==="orders"&&!selected&&<section className="workspace"><div className="workspace-heading"><div><span className="eyebrow">ESPACE PERSONNEL</span><h1>Mes commandes</h1><p>Retrouve ici toutes tes demandes et leur avancement.</p></div><button className="secondary-button" onClick={()=>{setPage("home");setSelected(null)}}><Plus size={16}/> Nouvelle demande</button></div>{notice&&<div className="notice">{notice}<button onClick={()=>setNotice("")}><X size={16}/></button></div>}{orders.length===0?<div className="empty-state"><ShoppingBag/><strong>Aucune commande pour le moment</strong><span>Les demandes que tu enverras apparaîtront ici.</span><button className="primary-button" onClick={()=>setPage("home")}>Découvrir les services</button></div>:<div className="orders-list">{orders.map(o=><button className="order-row" key={o.id} onClick={()=>loadOrder(o)}><div className="order-icon"><FileText/></div><div className="order-info"><strong>{o.reference}</strong><span>{date(o.created_at)}</span></div><div className="order-price">{o.montant_final?money(o.montant_final):"Prix à confirmer"}</div><span className={"status "+statusClass(o.statut)}>{statusLabel(o.statut)}</span><ArrowRight size={17}/></button>)}</div>}</section>}
+   {page==="orders"&&selected&&<section className="workspace"><button className="back-link" onClick={()=>setSelected(null)}><ArrowLeft size={17}/> Retour aux commandes</button><div className="workspace-heading"><div><span className="eyebrow">SUIVI DE COMMANDE</span><h1>{selected.reference}</h1><p>Créée le {date(selected.created_at)}</p></div><span className={"status large "+statusClass(selected.statut)}>{statusLabel(selected.statut)}</span></div>
+    <div className="order-detail-grid"><div className="main-column"><section className="panel"><h2>Détails de la demande</h2>{details.map(d=><div className="detail-row" key={d.id}><span>{d.nom_service} × {d.quantite}</span><strong>{money(d.prix_indicatif*d.quantite)}</strong></div>)}<div className="detail-total"><span>Prix définitif</span><strong>{selected.montant_final?money(selected.montant_final):"En attente de confirmation"}</strong></div>{selected.message_client&&<p className="customer-note">{selected.message_client}</p>}</section>
+    <section className="panel"><div className="panel-heading"><h2>Documents et fichiers</h2><label className="upload-button"><Upload size={16}/> Ajouter un fichier<input type="file" accept="image/jpeg,image/png,image/webp,application/pdf,.doc,.docx" onChange={async e=>{const f=e.target.files?.[0];if(f)try{await uploadFile(f)}catch(err){setNotice(err instanceof Error?err.message:"Envoi impossible")}e.currentTarget.value=""}}/></label></div><p className="muted">PDF, Word ou image · 10 Mo maximum par fichier.</p>{files.length===0?<p className="empty-inline">Aucun fichier pour cette commande.</p>:files.map(f=><div className="file-row" key={f.id}><FileText size={19}/><div><strong>{f.nom_fichier}</strong><small>{f.type_fichier==="livrable"?"Document final":"Fichier envoyé"} · {date(f.created_at)}</small></div><button className="icon-button" onClick={()=>downloadFile(f)} title="Télécharger"><Download size={17}/></button></div>)}</section>
+    <section className="panel"><div className="panel-heading"><h2>Conversation</h2><span className="muted">Échange avec notre équipe</span></div><div className="chat-list">{messages.length===0?<p className="empty-inline">Aucun message. Tu peux écrire à notre équipe ci-dessous.</p>:messages.map(m=><div className={"chat-message "+(m.expediteur==="client"?"mine":"theirs")} key={m.id}><small>{m.expediteur==="client"?"Moi":"BAOBAB DIGITAL"} · {date(m.created_at)}</small>{m.contenu&&<p>{m.contenu}</p>}{m.chemin_audio&&<button className="audio-link" onClick={()=>downloadAudio(m.chemin_audio!)}><Headphones size={16}/> Écouter le message vocal</button>}</div>)}</div><form className="chat-form" onSubmit={sendMessage}><textarea value={messageText} onChange={e=>setMessageText(e.target.value)} placeholder="Écris ton message…" maxLength={2000}/><button className={recording?"recording-button":"icon-button"} type="button" onClick={toggleRecording} title={recording?"Arrêter l'enregistrement":"Enregistrer un vocal"}><Mic size={18}/></button><button className="send-button" disabled={busy||!messageText.trim()}><Send size={17}/></button></form>{recording&&<p className="recording-hint">Enregistrement en cours… appuie sur le micro pour terminer.</p>}</section></div>
+    <aside className="side-column"><section className="panel"><h2>Paiement</h2><div className="payment-total">{selected.montant_final?money(selected.montant_final):"Prix en attente"}</div><span className={"status "+(selected.statut_paiement==="paye"?"good":"pending")}>{selected.statut_paiement==="paye"?"Paiement confirmé":"Paiement non confirmé"}</span>{payments.map(p=><div className="payment-entry" key={p.id}><strong>{p.methode==="orange_money"?"Orange Money":"Espèces"} · {money(p.montant)}</strong><small>{p.statut==="confirme"?"Confirmé":p.statut==="en_attente"?"En attente de vérification":p.statut}</small>{p.reference_transaction&&<small>Référence : {p.reference_transaction}</small>}</div>)}{selected.statut_paiement!=="paye"&&selected.montant_final&&selected.montant_final>0&&<form className="payment-form" onSubmit={choosePayment}><label>Moyen de paiement<select value={paymentMethod} onChange={e=>setPaymentMethod(e.target.value as "orange_money"|"especes")}><option value="orange_money">Orange Money</option><option value="especes">Espèces</option></select></label>{paymentMethod==="orange_money"?<><label>Référence de transaction (facultatif)<input value={transactionRef} onChange={e=>setTransactionRef(e.target.value)} placeholder="Référence Orange Money"/></label><p className="muted">N'effectue le transfert qu'après avoir reçu les coordonnées officielles de BAOBAB DIGITAL dans la conversation.</p></>:<label>Quand souhaites-tu payer ?<select value={cashOption} onChange={e=>setCashOption(e.target.value as "avant_livraison"|"au_retrait")}><option value="avant_livraison">Avant la livraison</option><option value="au_retrait">Au retrait</option></select></label>}<button className="primary-button full-button" disabled={busy}>{busy?"Enregistrement…":"Confirmer mon choix"}</button></form>}{selected.statut_paiement==="paye"&&<div className="paid-note"><CheckCircle2/> Paiement intégral confirmé. Les documents finaux disponibles peuvent être téléchargés dans la rubrique Documents.</div>}</section></aside></div></section>}
+   {page==="profile"&&<section className="workspace profile-workspace"><button className="back-link" onClick={()=>setPage("home")}><ArrowLeft size={17}/> Retour à l'accueil</button><div className="workspace-heading"><div><span className="eyebrow">ESPACE PERSONNEL</span><h1>Mon profil</h1><p>Gère tes coordonnées et ton compte client.</p></div></div><form className="panel profile-form" onSubmit={saveProfile}><label>Nom complet<input value={profileName} onChange={e=>setProfileName(e.target.value)} required/></label><label>Numéro de téléphone<input value={profilePhone} onChange={e=>setProfilePhone(e.target.value)} required/></label><label>Adresse e-mail<input value={session?.user.email||""} disabled/></label><button className="primary-button" disabled={busy}>Enregistrer les modifications</button><button type="button" className="text-button" onClick={signOut}>Me déconnecter</button></form></section>}
+  </main>
+  <footer><span>© {new Date().getFullYear()} {brand.nom_marque}</span><span>Burkina Faso · Tous droits réservés</span></footer>
+  {authOpen&&<div className="modal-backdrop" onMouseDown={e=>{if(e.target===e.currentTarget)setAuthOpen(false)}}><section className="auth-modal"><button className="modal-close" onClick={()=>setAuthOpen(false)}><X/></button><span className="modal-symbol"><TreeDeciduous size={28}/></span><span className="eyebrow">ESPACE CLIENT</span><h2>{authMode==="signup"?"Créer mon compte":"Heureux de te revoir"}</h2><p>{authMode==="signup"?"Inscris-toi pour envoyer tes demandes, suivre tes commandes et retrouver tes documents.":"Connecte-toi pour accéder à ton espace client."}</p><form onSubmit={submitAuth}>{authMode==="signup"&&<><label>Nom complet<input value={fullName} onChange={e=>setFullName(e.target.value)} autoComplete="name" required placeholder="Ton nom et prénom"/></label><label>Téléphone<input value={phone} onChange={e=>setPhone(e.target.value)} autoComplete="tel" required placeholder="+226 …"/></label></>}<label>Adresse e-mail<input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" required placeholder="exemple@email.com"/></label><label>Mot de passe<input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete={authMode==="signup"?"new-password":"current-password"} minLength={8} required placeholder="8 caractères minimum"/></label><button className="primary-button full-button" disabled={authBusy}>{authBusy?"Patiente…":authMode==="signup"?"Créer mon compte":"Me connecter"} <ArrowRight size={17}/></button></form><div className="switch-auth">{authMode==="signup"?"Tu as déjà un compte ?":"Tu n'as pas encore de compte ?"} <button onClick={()=>setAuthMode(authMode==="signup"?"login":"signup")}>{authMode==="signup"?"Se connecter":"Créer un compte"}</button></div></section></div>}
+ </div>
 }
