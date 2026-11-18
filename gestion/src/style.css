@@ -518,3 +518,21 @@ textarea.input { min-height: 96px; resize: vertical; }
 .public-spinner { animation:public-spin 1s linear infinite; }
 @keyframes public-spin { to { transform:rotate(360deg); } }
 @media(max-width:520px) { .public-page{padding:14px 10px 24px}.public-card{padding:22px 16px}.public-header span{font-size:.72rem}.public-card h1{font-size:1.55rem} }
+
+
+/* Client list actions and archive filter */
+.section-heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.section-heading-row .section-heading {
+  margin-bottom: 0;
+}
+@media (max-width: 640px) {
+  .section-heading-row {
+    align-items: flex-start;
+  }
+}
