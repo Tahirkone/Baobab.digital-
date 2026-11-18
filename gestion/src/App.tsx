@@ -23,6 +23,8 @@ import {
   CheckCircle2,
   Clock,
   TrendingUp,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 import { supabase } from "./lib/supabase";
 import PublicRequest from "./PublicRequest";
@@ -65,6 +67,7 @@ type Client = {
   nom_complet: string;
   telephone: string;
   created_at: string;
+  archived_at?: string | null;
 };
 
 type Service = {
@@ -285,6 +288,7 @@ export default function App() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [details, setDetails] = useState<OrderDetail[]>([]);
   const [clients, setClients] = useState<Client[]>([]);
+  const [showArchivedClients, setShowArchivedClients] = useState(false);
   const [clientFormId, setClientFormId] = useState("");
   const [clientFormName, setClientFormName] = useState("");
   const [clientFormPhone, setClientFormPhone] = useState("");
@@ -327,6 +331,8 @@ export default function App() {
   const selectedDetails = details.filter(
     (item) => item.ordre_id === selectedOrderId
   );
+
+  const visibleClients = clients.filter((client) => showArchivedClients ? Boolean(client.archived_at) : !client.archived_at);
 
   const filteredOrders = useMemo(() => {
     const value = search.toLowerCase().trim();
@@ -677,6 +683,7 @@ export default function App() {
 
   async function saveClient(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const isEditing = Boolean(clientFormId);
     const name = clientFormName.trim();
     const phone = clientFormPhone.trim();
 
@@ -713,7 +720,23 @@ export default function App() {
       showNotice("Client enregistré, mais actualisation impossible : " + error.message, true);
     } else {
       setClients((data ?? []) as Client[]);
-      showNotice(clientFormId ? "Client modifié." : "Client ajouté.");
+      showNotice(isEditing ? "Client modifié." : "Client ajouté.");
+    }
+    setSaving(false);
+  }
+
+  async function toggleClientArchive(client: Client) {
+    const archivedAt = client.archived_at ? null : new Date().toISOString();
+    setSaving(true);
+    const { error } = await supabase
+      .from("clients")
+      .update({ archived_at: archivedAt, updated_at: new Date().toISOString() })
+      .eq("id", client.id);
+    if (error) {
+      showNotice("Impossible de modifier l’archivage du client : " + error.message, true);
+    } else {
+      setClients((previous) => previous.map((item) => item.id === client.id ? { ...item, archived_at: archivedAt } : item));
+      showNotice(archivedAt ? "Client archivé. Son historique est conservé." : "Client restauré.");
     }
     setSaving(false);
   }
@@ -1446,7 +1469,7 @@ export default function App() {
                   <Field label="Client">
                     <select className="input" value={newOrderClientId} onChange={(event) => setNewOrderClientId(event.target.value)} required>
                       <option value="">Choisir un client</option>
-                      {clients.map((client) => (
+                      {clients.filter((client) => !client.archived_at).map((client) => (
                         <option key={client.id} value={client.id}>{client.nom_complet} — {client.telephone}</option>
                       ))}
                     </select>
@@ -1479,10 +1502,10 @@ export default function App() {
                   </div>
                 )}
                 <p className="help-text">Total calculé : <strong>{money(services.reduce((sum, service) => sum + service.indicative_price * (newOrderServices[service.id] ?? 0), 0))}</strong>. Le montant pourra être ajusté dans les détails après création, avant paiement.</p>
-                <button className="btn btn-primary btn-large" disabled={saving || clients.length === 0 || !services.some((item) => item.is_active)}>
+                <button className="btn btn-primary btn-large" disabled={saving || !clients.some((client) => !client.archived_at) || !services.some((item) => item.is_active)}>
                   <Plus size={18} /> Créer la commande
                 </button>
-                {clients.length === 0 && <p className="help-text">Ajoute d'abord un client dans le menu Clients.</p>}
+                {!clients.some((client) => !client.archived_at) && <p className="help-text">Ajoute d'abord un client actif dans le menu Clients.</p>}
               </form>
               <div className="orders-search">
                 <Search size={19} />
@@ -1646,7 +1669,13 @@ export default function App() {
 
           {section === "clients" && (
             <>
-              <h2 className="section-heading">Liste des clients</h2>
+              <div className="section-heading-row">
+                <h2 className="section-heading">Liste des clients</h2>
+                <button type="button" className="btn btn-secondary btn-small" onClick={() => setShowArchivedClients((value) => !value)}>
+                  {showArchivedClients ? <ArchiveRestore size={16} /> : <Archive size={16} />}
+                  {showArchivedClients ? "Voir les clients actifs" : "Voir les archives"}
+                </button>
+              </div>
               <div className="two-columns">
                 <form className="card" onSubmit={saveClient}>
                   <h3 className="card-title">{clientFormId ? "Modifier le client" : "Ajouter un client"}</h3>
@@ -1662,9 +1691,12 @@ export default function App() {
                   </div>
                 </form>
                 <div className="card">
-                  <p className="card-subtitle">Total : {clients.length} client(s)</p>
-                {clients.length === 0 ? (
-                  <p className="empty-text">Aucun client enregistré pour le moment.</p>
+                  <p className="card-subtitle">
+                    {showArchivedClients ? "Archives" : "Clients actifs"} : {visibleClients.length}
+                    {" · "}{clients.filter((client) => Boolean(client.archived_at)).length} archivé(s)
+                  </p>
+                {visibleClients.length === 0 ? (
+                  <p className="empty-text">{showArchivedClients ? "Aucun client archivé." : "Aucun client actif pour le moment."}</p>
                 ) : (
                   <div className="table-wrap">
                     <table className="data-table">
@@ -1678,13 +1710,13 @@ export default function App() {
                         </tr>
                       </thead>
                       <tbody>
-                        {clients.map((client) => (
+                        {visibleClients.map((client) => (
                           <tr key={client.id}>
-                            <td data-label="Nom"><strong>{client.nom_complet}</strong></td>
+                            <td data-label="Nom"><strong>{client.nom_complet}</strong>{client.archived_at && <span className="badge badge-neutral">Archivé</span>}</td>
                             <td data-label="Téléphone">{client.telephone}</td>
                             <td data-label="Commandes">{orders.filter((order) => order.client_id === client.id).length}</td>
                             <td data-label="Inscription">{dateText(client.created_at)}</td>
-                            <td data-label="Action"><button type="button" className="btn btn-secondary btn-small" onClick={() => editClient(client)}>Modifier</button></td>
+                            <td data-label="Action"><div className="btn-row"><button type="button" className="btn btn-secondary btn-small" onClick={() => editClient(client)}>Modifier</button><button type="button" className={client.archived_at ? "btn btn-success btn-small" : "btn btn-danger btn-small"} onClick={() => toggleClientArchive(client)} disabled={saving}>{client.archived_at ? "Restaurer" : "Archiver"}</button></div></td>
                           </tr>
                         ))}
                       </tbody>
