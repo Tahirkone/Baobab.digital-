@@ -276,6 +276,33 @@ img, svg { max-width: 100%; }
 .finance-balance strong { font-size: 1.35rem; color: var(--white); }
 .finance-balance.negative strong { color: #FFB4AB; }
 
+.finance-chart-card { margin-top: 14px; }
+.finance-chart-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+.finance-chart-heading .card-title { margin-bottom: 3px; }
+.finance-chart-heading .card-subtitle { margin-bottom: 0; }
+.finance-chart-unit { color: var(--muted); font-size: .75rem; font-weight: 700; }
+.finance-chart-legend { display: flex; flex-wrap: wrap; gap: 16px; margin: 14px 0 8px; color: var(--muted); font-size: .8rem; }
+.finance-chart-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend-dot { width: 9px; height: 9px; display: inline-block; border-radius: 50%; }
+.legend-revenue { background: var(--green); }
+.legend-expenses { background: var(--gold); }
+.finance-chart { height: 190px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; padding: 10px 2px 0; border-bottom: 1px solid var(--line); background: repeating-linear-gradient(to top, transparent 0, transparent 46px, var(--line) 47px, transparent 48px); }
+.finance-chart-month { min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 7px; }
+.finance-chart-bars { width: 100%; height: 155px; display: flex; align-items: flex-end; justify-content: center; gap: 4px; }
+.finance-bar-slot { width: min(34%, 24px); height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+.finance-bar-value { min-height: 15px; color: var(--muted); font-size: .58rem; line-height: 1; white-space: nowrap; }
+.finance-bar { width: 100%; min-height: 2px; border-radius: 5px 5px 0 0; transition: height .2s ease; }
+.finance-bar-revenue { background: var(--green); }
+.finance-bar-expenses { background: var(--gold); }
+.finance-chart-label { color: var(--muted); font-size: .72rem; text-transform: capitalize; }
+.finance-chart-note { margin-top: 10px; color: var(--muted); font-size: .76rem; }
+@media (min-width: 700px) {
+  .finance-chart { height: 230px; gap: 16px; }
+  .finance-chart-bars { height: 190px; gap: 7px; }
+  .finance-bar-slot { width: min(30%, 32px); }
+  .finance-bar-value { font-size: .68rem; }
+  .finance-chart-label { font-size: .8rem; }
+}
 .stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .stat-card {
   min-width: 0; padding: 12px;
