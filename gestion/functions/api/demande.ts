@@ -142,6 +142,12 @@ export async function onRequestPost({ request, env }: PagesContext) {
     console.error("public_request_supabase_error", {
       status: rpcResponse.status,
       code: errorCode,
+      apiKeyType: serviceKey.startsWith("sb_secret_")
+        ? "opaque_secret"
+        : serviceKey.startsWith("eyJ")
+          ? "legacy_jwt"
+          : "unknown",
+      apiKeyLength: serviceKey.length,
     });
 
     if (rpcResponse.status === 401 || rpcResponse.status === 403) {
