@@ -47,6 +47,30 @@ jobs:
       - name: Sync Capacitor
         working-directory: ${{ matrix.app }}
         run: npx cap sync android
+      - name: Apply official BAOBAB DIGITAL launcher icon
+        working-directory: ${{ matrix.app }}
+        run: |
+          python3 -m pip install --quiet pillow
+          python3 - <<'PY'
+          import base64, re
+          from pathlib import Path
+          from io import BytesIO
+          from PIL import Image
+          svg = Path("public/icon.svg").read_text()
+          match = re.search(r"base64,([A-Za-z0-9+/=]+)", svg)
+          if not match:
+              raise SystemExit("Official app icon data not found")
+          source = Image.open(BytesIO(base64.b64decode(match.group(1)))).convert("RGBA")
+          res = Path("android/app/src/main/res")
+          sizes = {"mdpi":48,"hdpi":72,"xhdpi":96,"xxhdpi":144,"xxxhdpi":192}
+          for density, size in sizes.items():
+              folder = res / f"mipmap-{density}"
+              if not folder.exists():
+                  continue
+              icon = source.resize((size,size), Image.Resampling.LANCZOS)
+              icon.save(folder / "ic_launcher.png")
+              icon.save(folder / "ic_launcher_round.png")
+          PY
       - name: Build debug APK
         working-directory: ${{ matrix.app }}/android
         run: ./gradlew assembleDebug
