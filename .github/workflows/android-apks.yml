@@ -1,0 +1,53 @@
+name: Build BAOBAB DIGITAL Android APKs
+on:
+  pull_request:
+    paths:
+      - "client/**"
+      - "gestion/**"
+      - ".github/workflows/android-apks.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "client/**"
+      - "gestion/**"
+      - ".github/workflows/android-apks.yml"
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [client, gestion]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: android-actions/setup-android@v3
+      - name: Install dependencies
+        working-directory: ${{ matrix.app }}
+        run: npm install --no-audit --no-fund
+      - name: Build web application
+        working-directory: ${{ matrix.app }}
+        run: npm run build
+      - name: Generate Android project
+        working-directory: ${{ matrix.app }}
+        run: npx cap add android
+      - name: Sync Capacitor
+        working-directory: ${{ matrix.app }}
+        run: npx cap sync android
+      - name: Build debug APK
+        working-directory: ${{ matrix.app }}/android
+        run: ./gradlew assembleDebug
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: baobab-digital-${{ matrix.app }}-android-apk
+          path: ${{ matrix.app }}/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 14
