@@ -361,6 +361,7 @@ export default function App() {
   const [orderFiles, setOrderFiles] = useState<OrderFileAdmin[]>([]);
   const [orderMessages, setOrderMessages] = useState<OrderMessageAdmin[]>([]);
   const [inboxMessages, setInboxMessages] = useState<OrderMessageAdmin[]>([]);
+  const [inboxFiles, setInboxFiles] = useState<OrderFileAdmin[]>([]);
   const [messageSearch, setMessageSearch] = useState("");
   const [adminMessage, setAdminMessage] = useState("");
   const [brand, setBrand] = useState<Brand | null>(null);
@@ -496,6 +497,7 @@ export default function App() {
       historyResult,
       brandResult,
       inboxResult,
+      inboxFilesResult,
     ] = await Promise.all([
       supabase.from("ordres").select("*").order("created_at", { ascending: false }),
       supabase.from("clients").select("*").order("created_at", { ascending: false }),
@@ -505,6 +507,7 @@ export default function App() {
       supabase.from("historique_commandes").select("*").order("date_modification", { ascending: false }),
       supabase.from("parametres_marque").select("*").limit(1).maybeSingle(),
       supabase.from("messages").select("*").order("created_at", { ascending: false }),
+      supabase.from("fichiers_commandes").select("*").order("created_at", { ascending: false }),
     ]);
 
     const errors: string[] = [];
@@ -549,6 +552,11 @@ export default function App() {
       errors.push("messages : " + inboxResult.error.message);
     } else {
       setInboxMessages((inboxResult.data ?? []) as OrderMessageAdmin[]);
+    }
+    if (inboxFilesResult.error) {
+      errors.push("fichiers de conversation : " + inboxFilesResult.error.message);
+    } else {
+      setInboxFiles((inboxFilesResult.data ?? []) as OrderFileAdmin[]);
     }
 
     if (brandResult.error) {
@@ -670,6 +678,10 @@ export default function App() {
           const { data: thread } = await supabase.from("messages").select("*").eq("ordre_id", changedOrderId).order("created_at", { ascending: true });
           if (thread) setOrderMessages(thread as OrderMessageAdmin[]);
         }
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "fichiers_commandes" }, async () => {
+        const { data } = await supabase.from("fichiers_commandes").select("*").order("created_at", { ascending: false });
+        if (data) setInboxFiles(data as OrderFileAdmin[]);
       }).subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [session, isAdmin, selectedOrderId]);
@@ -1786,7 +1798,7 @@ export default function App() {
                   {!selectedOrder ? <div className="inbox-welcome"><MessageCircle size={42}/><h3>Ta messagerie BAOBAB</h3><p>Sélectionne une conversation à gauche pour lire les messages et répondre au client.</p></div> : <>
                     <header className="inbox-thread-head"><span className="inbox-avatar">{selectedOrder.nom_client.trim().charAt(0).toLocaleUpperCase() || "C"}</span><div><strong>{selectedOrder.nom_client}</strong><small>{selectedOrder.telephone_client} · Commande {selectedOrder.reference}</small></div><button type="button" className="btn btn-secondary btn-small" onClick={() => navigate("orders")}>Voir commande</button></header>
                     <div className="inbox-thread-body">
-                      {orderMessages.length === 0 ? <p className="empty-text">Aucun message dans cette conversation.</p> : orderMessages.map((item) => <div className={item.expediteur === "admin" ? "admin-chat-message admin" : "admin-chat-message client"} key={item.id}><small>{item.expediteur === "admin" ? "BAOBAB DIGITAL" : "Client"} · {dateText(item.created_at)}</small>{item.contenu && <p>{item.contenu}</p>}{item.chemin_audio && <button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(item.chemin_audio!)}>Écouter le vocal</button>}</div>)}
+                      {orderMessages.length === 0 && !inboxFiles.some((file) => file.ordre_id === selectedOrderId && file.type_fichier !== "livrable") ? <p className="empty-text">Aucun message dans cette conversation.</p> : <>{orderMessages.map((item) => <div className={item.expediteur === "admin" ? "admin-chat-message admin" : "admin-chat-message client"} key={item.id}><small>{item.expediteur === "admin" ? "BAOBAB DIGITAL" : "Client"} · {dateText(item.created_at)}</small>{item.contenu && <p>{item.contenu}</p>}{item.chemin_audio && <button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(item.chemin_audio!)}>Écouter le vocal</button>}</div>)}{inboxFiles.filter((file) => file.ordre_id === selectedOrderId && file.type_fichier !== "livrable").map((file) => <div className="admin-chat-message client" key={"file-"+file.id}><small>Document envoyé · {dateText(file.created_at)}</small><p>📎 {file.nom_fichier}</p><button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(file.chemin_stockage)}>Ouvrir le document</button></div>)}</>}
                     </div>
                     <form className="inbox-compose" onSubmit={sendAdminOrderMessage}><textarea className="input" value={adminMessage} onChange={(event) => setAdminMessage(event.target.value)} placeholder="Écrire un message…" maxLength={2000}/><button className="btn btn-primary" disabled={saving || !adminMessage.trim()}><MessageCircle size={17}/> Envoyer</button></form>
                   </>}
