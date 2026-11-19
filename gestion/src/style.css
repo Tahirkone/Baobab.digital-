@@ -622,3 +622,49 @@ textarea.input { min-height: 96px; resize: vertical; }
 /* Espace commandes : pièces jointes privées et conversation client */
 .admin-file-upload{display:inline-flex;align-items:center;gap:8px;cursor:pointer}.admin-file-upload input{display:none}.admin-order-files{display:grid;gap:8px;margin:12px 0}.admin-order-file{display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid var(--border,#e4e9e3);border-radius:8px;padding:10px 12px}.admin-order-file>span{display:grid;gap:4px;min-width:0}.admin-order-file strong{font-size:12px;overflow-wrap:anywhere}.admin-order-file small{font-size:10px;color:var(--muted,#78847c)}.admin-order-chat{display:grid;gap:9px;max-height:320px;overflow:auto;margin:12px 0}.admin-chat-message{max-width:88%;padding:10px 12px;border-radius:9px;background:#f3f5f1}.admin-chat-message.admin{justify-self:end;background:#eaf3eb}.admin-chat-message.client{justify-self:start}.admin-chat-message small{display:block;font-size:9px;color:#758178;margin-bottom:5px}.admin-chat-message p{font-size:12px;line-height:1.55;margin:0;white-space:pre-wrap;overflow-wrap:anywhere}.admin-chat-form{display:flex;gap:9px;align-items:end}.admin-chat-form textarea{min-height:44px;resize:vertical;flex:1}.sub-title svg{vertical-align:middle;margin-right:5px}
 @media(max-width:640px){.admin-order-file{align-items:flex-start}.admin-chat-form{align-items:stretch;flex-direction:column}.admin-chat-form button{align-self:flex-start}}
+
+
+/* Messagerie dédiée — interface boîte de réception */
+.inbox-page { width:100%; }
+.inbox-heading { display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.inbox-heading .section-heading { margin:0 0 4px; }
+.inbox-heading p { color:var(--muted); font-size:.88rem; }
+.inbox-total { flex-shrink:0; padding:7px 11px; border-radius:999px; background:var(--green-light); color:var(--green); font-size:.78rem; font-weight:800; }
+.inbox-layout { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; min-height: min(72dvh,760px); }
+.inbox-list { margin:0; padding:10px; min-width:0; }
+.inbox-search { display:flex; align-items:center; gap:9px; min-height:46px; padding:0 12px; margin-bottom:8px; border:1px solid var(--line); border-radius:12px; color:var(--muted); background:var(--bg); }
+.inbox-search input { width:100%; min-width:0; border:0; outline:0; background:transparent; color:var(--ink); }
+.inbox-contact { width:100%; display:flex; align-items:center; gap:10px; padding:11px 8px; border:0; border-bottom:1px solid var(--line); border-radius:10px; background:transparent; color:var(--ink); text-align:left; }
+.inbox-contact.active { background:var(--green-light); }
+.inbox-avatar { width:44px; height:44px; flex:0 0 44px; display:grid; place-items:center; border-radius:50%; background:var(--green); color:var(--gold); font-size:1.1rem; font-weight:800; }
+.inbox-contact-copy { display:flex; flex:1; min-width:0; flex-direction:column; gap:2px; }
+.inbox-contact-copy strong { color:var(--green); font-size:.9rem; }
+.inbox-contact-copy small { overflow:hidden; color:var(--muted); font-size:.75rem; text-overflow:ellipsis; white-space:nowrap; }
+.inbox-contact-meta { display:flex; flex-direction:column; align-items:flex-end; gap:5px; color:var(--muted); }
+.inbox-contact-meta small { font-size:.68rem; }
+.inbox-contact-meta i { min-width:20px; height:20px; display:grid; place-items:center; border-radius:50%; background:var(--gold); color:var(--green-dark); font-size:.68rem; font-style:normal; font-weight:800; }
+.inbox-empty { padding:24px 10px; text-align:center; }
+.inbox-thread { display:flex; flex-direction:column; min-height:420px; margin:0; padding:0; overflow:hidden; }
+.inbox-welcome { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:30px; color:var(--muted); text-align:center; }
+.inbox-welcome svg { color:var(--gold); }
+.inbox-welcome h3 { color:var(--green); }
+.inbox-welcome p { max-width:340px; font-size:.9rem; }
+.inbox-thread-head { display:flex; align-items:center; gap:10px; padding:12px; border-bottom:1px solid var(--line); background:#fff; }
+.inbox-thread-head div { display:flex; flex:1; min-width:0; flex-direction:column; }
+.inbox-thread-head strong { color:var(--green); }
+.inbox-thread-head small { color:var(--muted); font-size:.74rem; overflow-wrap:anywhere; }
+.inbox-thread-body { flex:1; min-height:250px; max-height:55dvh; overflow-y:auto; display:flex; flex-direction:column; gap:10px; padding:14px; background:#f7f9f7; }
+.inbox-compose { display:flex; align-items:flex-end; gap:8px; padding:10px; border-top:1px solid var(--line); background:#fff; }
+.inbox-compose textarea { min-height:46px; max-height:120px; resize:vertical; }
+.inbox-compose .btn { min-height:46px; flex-shrink:0; }
+@media (min-width:760px) {
+ .inbox-layout { grid-template-columns:minmax(270px, .82fr) minmax(0,1.6fr); }
+ .inbox-list,.inbox-thread { min-height:620px; }
+ .inbox-thread-body { max-height:none; }
+}
+@media (max-width:420px) {
+ .inbox-heading { align-items:flex-start; flex-direction:column; }
+ .inbox-compose { flex-direction:column; align-items:stretch; }
+ .inbox-compose .btn { justify-content:center; }
+ .inbox-thread-head .btn { padding:8px; font-size:.72rem; }
+}
