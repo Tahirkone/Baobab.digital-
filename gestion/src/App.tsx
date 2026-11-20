@@ -28,6 +28,7 @@ import {
   TrendingUp,
   Archive,
   ArchiveRestore,
+  Bell,
   MonitorCog,
 } from "lucide-react";
 import { supabase } from "./lib/supabase";
