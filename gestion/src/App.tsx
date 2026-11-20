@@ -226,32 +226,10 @@ function paymentMethodText(value: string) {
 
 function BaobabIcon({ className }: { className?: string }) {
   return (
-    <svg
-      className={className}
-      viewBox="0 0 180 180"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M45 150 Q90 138 135 150"
-        stroke="#0F3D2E"
-        strokeWidth="5"
-        strokeLinecap="round"
-      />
-      <path
-        d="M78 148 L84 88 L72 66 L91 79 L105 58 L101 87 L112 148 Z"
-        fill="#0F3D2E"
-      />
-      <path
-        d="M89 82 C65 77 50 63 39 44 M96 80 C112 68 126 53 140 34 M86 77 C77 56 77 38 80 22 M101 77 C104 52 99 36 95 20"
-        stroke="#0F3D2E"
-        strokeWidth="7"
-        strokeLinecap="round"
-      />
-      <path
-        d="M32 48 C12 38 21 14 44 18 C48 -1 77 2 82 17 C100 -1 127 8 124 25 C148 11 169 29 157 46 C174 65 150 78 131 68 C114 86 91 76 85 68 C64 84 39 72 32 48Z"
-        fill="#C9A227"
-      />
+    <svg className={className} viewBox="0 0 180 180" fill="none" aria-hidden="true">
+      <rect x="8" y="8" width="164" height="164" rx="34" fill="#075B3B" />
+      <path d="M119 43C107 31 91 25 72 25C43 25 24 41 24 64C24 86 41 97 72 104L92 108C108 111 115 117 115 126C115 136 104 143 88 143C69 143 54 136 42 122L20 142C36 160 59 169 88 169C123 169 147 152 147 125C147 103 132 91 101 84L80 80C64 76 58 72 58 64C58 56 67 50 81 50C94 50 106 55 116 66Z" fill="#FFFFFF" transform="translate(0 -7)" />
+      <path d="M19 139C61 96 111 67 161 54C143 69 130 85 121 103C137 95 151 91 166 92C138 113 108 131 75 145C87 133 98 121 106 108C78 119 49 131 19 139Z" fill="#F59A19" />
     </svg>
   );
 }
