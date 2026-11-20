@@ -13,3 +13,25 @@
 
 .print-receipt{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:13px;padding:11px;border:1px solid #dce5dd;background:#fff;border-radius:8px;color:var(--green);font-size:11px;font-weight:700}.receipt-print{display:none}
 @media print{body *{visibility:hidden!important}.receipt-print,.receipt-print *{visibility:visible!important}.receipt-print{display:block!important;position:absolute;left:0;top:0;width:100%;max-width:720px;padding:35px;margin:0 auto;background:white;color:#222;font-family:Arial,sans-serif}.receipt-head{display:flex;align-items:center;gap:12px;color:#0f3d2e;border-bottom:2px solid #c9a227;padding-bottom:18px}.receipt-head strong,.receipt-head small{display:block}.receipt-head strong{font-size:18px}.receipt-head small{font-size:10px;margin-top:4px}.receipt-print h2{text-align:center;font-size:18px;letter-spacing:1px;margin:28px 0}.receipt-print p{font-size:12px;margin:10px 0}.receipt-lines{border-top:1px solid #ddd;border-bottom:1px solid #ddd;margin:20px 0;padding:12px 0}.receipt-lines>div,.receipt-total{display:flex;justify-content:space-between;gap:20px;padding:8px 0;font-size:12px}.receipt-total{font-size:15px;font-weight:700;border-bottom:2px solid #c9a227;padding:14px 0}.receipt-thanks{text-align:center;margin-top:35px!important;color:#55705e}}
+\n
+/* SUGUMA — modernisation visuelle */
+:root{--green:#075b3b;--gold:#f59a19;--muted:#64756c;--line:#e5ece7;background:#f7faf8;color:#183328}
+body{background:#f7faf8}
+.topbar{box-shadow:0 5px 24px #123b2510;border-bottom-color:#e8eee9}
+.brand-icon,.doc-mark,.service-icon,.order-icon,.modal-symbol{background:#eaf4ee;color:#075b3b}
+.brand strong{letter-spacing:.8px}
+.hero{padding-top:94px;padding-bottom:104px}
+.hero h1{letter-spacing:-2.8px}
+.hero h1 em{color:#f59a19}
+.primary-button,.service-bottom button,.send-button{background:#075b3b;border-radius:12px;box-shadow:0 7px 16px #075b3b1c}
+.primary-button:hover,.service-bottom button:hover,.send-button:hover{background:#06472f}
+.cart-summary button,.contact-strip>a{background:#f59a19;color:#173326;border-radius:12px}
+.service-card,.panel,.order-row,.step,.auth-modal{border-radius:16px;border-color:#e6eee8;box-shadow:0 8px 28px #153e2510}
+.service-card:hover{border-color:#b7d5c2;box-shadow:0 14px 34px #075b3b18}
+.service-icon{border-radius:13px}
+.notice{border-radius:12px}
+.auth-modal{box-shadow:0 24px 70px #092b2050}
+.account-button,.secondary-button,.upload-button{border-radius:11px}
+.status{border-radius:999px}
+.contact-strip{background:linear-gradient(120deg,#06472f,#087448)}
+@media(max-width:650px){.hero{padding-top:54px}.hero-art{margin-top:20px}}
