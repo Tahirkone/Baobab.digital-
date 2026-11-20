@@ -1,13 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
-<rect width="512" height="512" rx="88" fill="#ffffff"/>
-<path d="M72 246 A184 184 0 0 1 440 246" fill="none" stroke="#c9a227" stroke-width="10" stroke-linecap="round"/>
-<g fill="#0f3d2e">
-<path d="M235 330 C244 284 247 249 239 216 C213 232 183 230 151 211 C190 213 216 197 231 174 C232 148 241 119 256 91 C271 119 280 148 281 174 C296 197 322 213 361 211 C329 230 299 232 273 216 C265 249 268 284 277 330 Z"/>
-<ellipse cx="256" cy="153" rx="103" ry="43"/>
-<ellipse cx="183" cy="172" rx="55" ry="30"/>
-<ellipse cx="329" cy="172" rx="55" ry="30"/>
-</g>
-<path d="M94 342 Q256 299 418 342" fill="none" stroke="#c9a227" stroke-width="9"/>
-<text x="256" y="405" text-anchor="middle" font-family="Arial,sans-serif" font-size="54" font-weight="800" fill="#0f3d2e">BAOBAB</text>
-<text x="256" y="452" text-anchor="middle" font-family="Arial,sans-serif" font-size="30" font-weight="600" letter-spacing="7" fill="#c9a227">DIGITAL</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+<rect width="512" height="512" rx="96" fill="#075b3b"/>
+<path d="M326 112c-26-30-64-46-111-46-74 0-125 39-125 98 0 56 42 83 119 99l51 10c40 8 57 18 57 39 0 24-26 40-68 40-48 0-86-18-117-54l-57 52c39 47 99 72 174 72 90 0 150-43 150-111 0-57-39-86-118-102l-55-11c-40-8-56-17-56-36 0-20 23-34 58-34 34 0 65 12 90 36z" fill="#fff"/>
+<path d="M74 352c102-111 224-191 364-227-45 36-82 76-109 120 39-19 75-29 112-29-74 54-153 97-241 127 32-30 58-61 78-94-68 31-137 66-204 103z" fill="#f59a19"/>
 </svg>
