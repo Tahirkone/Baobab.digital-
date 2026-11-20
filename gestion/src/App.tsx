@@ -239,6 +239,8 @@ function BaobabIcon({ className }: { className?: string }) {
   );
 }
 
+function browserNotify(title:string,body:string){if(typeof window==="undefined"||!("Notification" in window)||Notification.permission!=="granted")return;new Notification(title,{body,icon:"/favicon.ico"});}
+
 function BrandMark({ logo, className }: { logo: string; className?: string }) {
   const [failed, setFailed] = useState(false);
 
@@ -380,6 +382,7 @@ export default function App() {
   const [notice, setNotice] = useState("");
   const [errorNotice, setErrorNotice] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [notificationPermission,setNotificationPermission]=useState<NotificationPermission>(typeof Notification!=="undefined"?Notification.permission:"default");
 
   const selectedOrder = orders.find((item) => item.id === selectedOrderId);
   const inboxOrders = useMemo(() => {
@@ -654,6 +657,11 @@ export default function App() {
     if (!session || !isAdmin) return;
     const channel = supabase.channel("gestion-messages-live")
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, async (payload) => {
+        const changedMessage = payload.new as OrderMessageAdmin;
+        if (payload.eventType === "INSERT" && changedMessage.expediteur === "client") {
+          browserNotify("Nouveau message client", changedMessage.contenu || "Un client a envoyé un message vocal ou un fichier.");
+          showNotice("Nouveau message reçu d'un client.");
+        }
         const { data } = await supabase.from("messages").select("*").order("created_at", { ascending: false });
         if (data) setInboxMessages(data as OrderMessageAdmin[]);
         const changedOrderId = (payload.new as { ordre_id?: string } | null)?.ordre_id;
@@ -665,6 +673,17 @@ export default function App() {
       .on("postgres_changes", { event: "*", schema: "public", table: "fichiers_commandes" }, async () => {
         const { data } = await supabase.from("fichiers_commandes").select("*").order("created_at", { ascending: false });
         if (data) setInboxFiles(data as OrderFileAdmin[]);
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "ordres" }, (payload) => {
+        const order = payload.new as Order;
+        browserNotify("Nouvelle commande", (order.nom_client || "Un client") + " vient d'envoyer une commande.");
+        showNotice("Nouvelle commande reçue.");
+        loadAll().catch(() => {});
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "paiements" }, (payload) => {
+        browserNotify("Nouveau paiement à vérifier", "Un client vient d'enregistrer un paiement.");
+        showNotice("Nouveau paiement à vérifier.");
+        loadAll().catch(() => {});
       }).subscribe();
     return () => { void supabase.removeChannel(channel); };
   }, [session, isAdmin, selectedOrderId]);
@@ -745,6 +764,8 @@ export default function App() {
       window.removeEventListener("resize", onResize);
     };
   }, []);
+
+  async function enableNotifications(){if(!("Notification" in window)){showNotice("Les notifications ne sont pas prises en charge par ce navigateur.",true);return;}const permission=await Notification.requestPermission();setNotificationPermission(permission);showNotice(permission==="granted"?"Notifications activées sur cet appareil.":permission==="denied"?"Notifications bloquées. Autorise-les dans les réglages du navigateur.":"Autorisation des notifications non accordée.",permission!=="granted");}
 
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1612,6 +1633,10 @@ export default function App() {
             <h1>{titles[section]}</h1>
             <p>{brandSlogan}</p>
           </div>
+          <button type="button" className="refresh-button" onClick={enableNotifications} title={notificationPermission==="granted"?"Alertes activées":"Activer les alertes"} aria-label="Activer les notifications">
+            <Bell size={18} />
+            <span>{notificationPermission==="granted"?"Alertes activées":"Activer les alertes"}</span>
+          </button>
           <button
             type="button"
             className="refresh-button"
