@@ -681,7 +681,7 @@ export default function App() {
         showNotice("Nouvelle commande reçue.");
         loadAll().catch(() => {});
       })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "paiements" }, (payload) => {
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "paiements" }, () => {
         browserNotify("Nouveau paiement à vérifier", "Un client vient d'enregistrer un paiement.");
         showNotice("Nouveau paiement à vérifier.");
         loadAll().catch(() => {});
