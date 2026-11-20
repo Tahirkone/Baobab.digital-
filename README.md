@@ -1,6 +1,6 @@
-# BAOBAB DIGITAL
+# SUGUMA
 
-Plateforme de services numériques au Burkina Faso.
+Plateforme de services numériques au Burkina Faso, appelée à évoluer progressivement.
 
 ## Nos applications
 
