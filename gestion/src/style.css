@@ -668,3 +668,20 @@ textarea.input { min-height: 96px; resize: vertical; }
  .inbox-compose .btn { justify-content:center; }
  .inbox-thread-head .btn { padding:8px; font-size:.72rem; }
 }
+\n
+/* SUGUMA — modernisation visuelle */
+:root{--green:#075b3b;--green-dark:#063e2b;--green-light:#eaf4ee;--gold:#f59a19;--border:#e4ece6;--muted:#64756c}
+body{background:#f6faf7}
+.sidebar,.side-nav{background:#063e2b}
+.brand-name strong,.section-heading{color:#075b3b}
+.card,.summary-card,.login-card,.settings-card{border-radius:16px;box-shadow:0 8px 28px #123b2510;border-color:#e4ece6}
+.btn-primary{background:#075b3b;border-radius:11px;box-shadow:0 6px 15px #075b3b20}
+.btn-primary:hover{background:#06472f}
+.btn-success{background:#0b8051}
+.btn-secondary,.input{border-radius:10px}
+.input:focus{border-color:#69a986;box-shadow:0 0 0 3px #e6f3eb}
+.badge,.status{border-radius:999px}
+.summary-card{background:linear-gradient(145deg,#fff,#f7fbf8)}
+.summary-gold{border-top:3px solid #f59a19}
+.inbox-avatar{background:#075b3b;color:#fff}
+@media(max-width:760px){.card,.summary-card{border-radius:13px}}
