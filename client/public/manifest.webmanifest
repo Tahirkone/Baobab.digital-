@@ -1,12 +1,12 @@
 {
-  "name": "BAOBAB DIGITAL CLIENT",
-  "short_name": "Baobab Client",
+  "name": "SUGUMA CLIENT",
+  "short_name": "Suguma Client",
   "description": "Vos services numériques à portée de main.",
   "lang": "fr",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#f7f8f5",
-  "theme_color": "#0f3d2e",
+  "theme_color": "#075b3b",
   "icons": [
     {
       "src": "/icon.svg",
