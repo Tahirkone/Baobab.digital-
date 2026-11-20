@@ -391,8 +391,8 @@ export default function App() {
   const [transactionReference, setTransactionReference] = useState("");
   const [refusingPaymentId, setRefusingPaymentId] = useState("");
   const [refusalReason, setRefusalReason] = useState("");
-  const [brandName, setBrandName] = useState("BAOBAB DIGITAL");
-  const [brandSlogan, setBrandSlogan] = useState("Le numérique à votre portée.");
+  const [brandName, setBrandName] = useState("SUGUMA");
+  const [brandSlogan, setBrandSlogan] = useState("Le marché sans frontières.");
   const [brandLogo, setBrandLogo] = useState("");
   const [notice, setNotice] = useState("");
   const [errorNotice, setErrorNotice] = useState(false);
@@ -1276,7 +1276,7 @@ export default function App() {
   async function confirmPayment(paymentId: string) {
     if (
       !window.confirm(
-        "As-tu vérifié directement que l'argent est réellement arrivé sur le compte ou le portefeuille BAOBAB DIGITAL ? Ne confirme pas uniquement sur la base d'une capture d'écran ou d'un SMS."
+        "As-tu vérifié directement que l'argent est réellement arrivé sur le compte ou le portefeuille SUGUMA ? Ne confirme pas uniquement sur la base d'une capture d'écran ou d'un SMS."
       )
     ) {
       return;
@@ -1405,7 +1405,7 @@ export default function App() {
       });
 
     receiptWindow.document.write(
-      "<!doctype html><html lang='fr'><head><meta charset='UTF-8'><title>Reçu BAOBAB DIGITAL</title></head><body>Préparation du reçu...</body></html>"
+      "<!doctype html><html lang='fr'><head><meta charset='UTF-8'><title>Reçu SUGUMA</title></head><body>Préparation du reçu...</body></html>"
     );
 
     const { data: orderDetails, error } = await supabase
@@ -1438,7 +1438,7 @@ export default function App() {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Reçu BAOBAB DIGITAL</title>
+        <title>Reçu SUGUMA</title>
         <style>
           *{box-sizing:border-box}
           body{font-family:Arial,Helvetica,sans-serif;color:#0F3D2E;margin:0;padding:20px;background:#f5f7f4}
@@ -1506,7 +1506,7 @@ export default function App() {
     return (
       <div className="loading">
         <BaobabIcon className="loading-icon" />
-        <span>Chargement de BAOBAB DIGITAL...</span>
+        <span>Chargement de SUGUMA...</span>
       </div>
     );
   }
@@ -1518,8 +1518,8 @@ export default function App() {
           <div className="login-logo">
             <BaobabIcon className="brand-mark" />
           </div>
-          <h1>BAOBAB DIGITAL</h1>
-          <p className="subtitle">Le numérique à votre portée.</p>
+          <h1>SUGUMA</h1>
+          <p className="subtitle">Le marché sans frontières.</p>
           <p className="login-intro">Espace de gestion sécurisé</p>
           <form onSubmit={handleLogin}>
             <label htmlFor="login-email">Adresse e-mail</label>
@@ -1795,10 +1795,10 @@ export default function App() {
                   ))}
                 </aside>
                 <section className="inbox-thread card">
-                  {!selectedOrder ? <div className="inbox-welcome"><MessageCircle size={42}/><h3>Ta messagerie BAOBAB</h3><p>Sélectionne une conversation à gauche pour lire les messages et répondre au client.</p></div> : <>
+                  {!selectedOrder ? <div className="inbox-welcome"><MessageCircle size={42}/><h3>Ta messagerie SUGUMA</h3><p>Sélectionne une conversation à gauche pour lire les messages et répondre au client.</p></div> : <>
                     <header className="inbox-thread-head"><span className="inbox-avatar">{selectedOrder.nom_client.trim().charAt(0).toLocaleUpperCase() || "C"}</span><div><strong>{selectedOrder.nom_client}</strong><small>{selectedOrder.telephone_client} · Commande {selectedOrder.reference}</small></div><button type="button" className="btn btn-secondary btn-small" onClick={() => navigate("orders")}>Voir commande</button></header>
                     <div className="inbox-thread-body">
-                      {orderMessages.length === 0 && !inboxFiles.some((file) => file.ordre_id === selectedOrderId && file.type_fichier !== "livrable") ? <p className="empty-text">Aucun message dans cette conversation.</p> : <>{orderMessages.map((item) => <div className={item.expediteur === "admin" ? "admin-chat-message admin" : "admin-chat-message client"} key={item.id}><small>{item.expediteur === "admin" ? "BAOBAB DIGITAL" : "Client"} · {dateText(item.created_at)}</small>{item.contenu && <p>{item.contenu}</p>}{item.chemin_audio && <button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(item.chemin_audio!)}>Écouter le vocal</button>}</div>)}{inboxFiles.filter((file) => file.ordre_id === selectedOrderId && file.type_fichier !== "livrable").map((file) => <div className="admin-chat-message client" key={"file-"+file.id}><small>Document envoyé · {dateText(file.created_at)}</small><p>📎 {file.nom_fichier}</p><button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(file.chemin_stockage)}>Ouvrir le document</button></div>)}</>}
+                      {orderMessages.length === 0 && !inboxFiles.some((file) => file.ordre_id === selectedOrderId && file.type_fichier !== "livrable") ? <p className="empty-text">Aucun message dans cette conversation.</p> : <>{orderMessages.map((item) => <div className={item.expediteur === "admin" ? "admin-chat-message admin" : "admin-chat-message client"} key={item.id}><small>{item.expediteur === "admin" ? "SUGUMA" : "Client"} · {dateText(item.created_at)}</small>{item.contenu && <p>{item.contenu}</p>}{item.chemin_audio && <button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(item.chemin_audio!)}>Écouter le vocal</button>}</div>)}{inboxFiles.filter((file) => file.ordre_id === selectedOrderId && file.type_fichier !== "livrable").map((file) => <div className="admin-chat-message client" key={"file-"+file.id}><small>Document envoyé · {dateText(file.created_at)}</small><p>📎 {file.nom_fichier}</p><button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(file.chemin_stockage)}>Ouvrir le document</button></div>)}</>}
                     </div>
                     <form className="inbox-compose" onSubmit={sendAdminOrderMessage}><textarea className="input" value={adminMessage} onChange={(event) => setAdminMessage(event.target.value)} placeholder="Écrire un message…" maxLength={2000}/><button className="btn btn-primary" disabled={saving || !adminMessage.trim()}><MessageCircle size={17}/> Envoyer</button></form>
                   </>}
@@ -1966,7 +1966,7 @@ export default function App() {
                         <div className="admin-order-chat">
                           {orderMessages.length === 0 ? <p className="empty-text">Aucun message pour le moment.</p> : orderMessages.map((item) => (
                             <div className={item.expediteur === "admin" ? "admin-chat-message admin" : "admin-chat-message client"} key={item.id}>
-                              <small>{item.expediteur === "admin" ? "BAOBAB DIGITAL" : "Client"} · {dateText(item.created_at)}</small>
+                              <small>{item.expediteur === "admin" ? "SUGUMA" : "Client"} · {dateText(item.created_at)}</small>
                               {item.contenu && <p>{item.contenu}</p>}
                               {item.chemin_audio && <button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(item.chemin_audio!)}>Écouter le vocal</button>}
                             </div>
@@ -2461,7 +2461,7 @@ export default function App() {
                 {(brandLogoPreview || brandLogo) && (
                   <div className="logo-preview">
                     <p>Aperçu du logo</p>
-                    <img src={brandLogoPreview || brandLogo} alt="Logo BAOBAB DIGITAL" />
+                    <img src={brandLogoPreview || brandLogo} alt="Logo SUGUMA" />
                   </div>
                 )}
                 <p className="help-text">L'image est automatiquement optimisée avant son enregistrement.</p>
@@ -2470,7 +2470,7 @@ export default function App() {
                 </button>
               </form>
               <Notice>
-                Formats acceptés selon la galerie : image. Le logo et les icônes sont optimisés puis enregistrés dans l'espace de stockage BAOBAB DIGITAL.
+                Formats acceptés selon la galerie : image. Le logo et les icônes sont optimisés puis enregistrés dans l'espace de stockage SUGUMA.
               </Notice>
             </>
           )}
