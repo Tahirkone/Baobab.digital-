@@ -1,0 +1,14 @@
+{
+  "name": "SUGUMA GESTION",
+  "short_name": "Suguma Gestion",
+  "description": "Espace privé de gestion SUGUMA.",
+  "lang": "fr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#075b3b",
+  "icons": [
+    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

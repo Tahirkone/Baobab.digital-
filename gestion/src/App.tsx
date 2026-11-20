@@ -28,18 +28,22 @@ import {
   TrendingUp,
   Archive,
   ArchiveRestore,
+  MonitorCog,
 } from "lucide-react";
 import { supabase } from "./lib/supabase";
 import PublicRequest from "./PublicRequest";
+import ClientAppearance from "./ClientAppearance";
 
 type Section =
   | "dashboard"
   | "orders"
+  | "messages"
   | "clients"
   | "services"
   | "payments"
   | "expenses"
-  | "settings";
+  | "settings"
+  | "client_design";
 
 type Order = {
   id: string;
@@ -154,21 +158,25 @@ const statusOptions = [
 const menu = [
   { id: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
   { id: "orders", label: "Commandes", icon: ShoppingBag },
+  { id: "messages", label: "Messages", icon: MessageCircle },
   { id: "clients", label: "Clients", icon: Users },
   { id: "services", label: "Services", icon: BriefcaseBusiness },
   { id: "payments", label: "Paiements", icon: CreditCard },
   { id: "expenses", label: "Dépenses", icon: Receipt },
   { id: "settings", label: "Paramètres", icon: Settings },
+  { id: "client_design", label: "App Client", icon: MonitorCog },
 ] as const;
 
 const titles: Record<Section, string> = {
   dashboard: "Tableau de bord",
   orders: "Commandes",
+  messages: "Messages",
   clients: "Clients",
   services: "Services",
   payments: "Paiements",
   expenses: "Dépenses",
   settings: "Paramètres",
+  client_design: "Personnaliser l’application Client",
 };
 
 function money(value: number) {
@@ -223,32 +231,10 @@ function paymentMethodText(value: string) {
 
 function BaobabIcon({ className }: { className?: string }) {
   return (
-    <svg
-      className={className}
-      viewBox="0 0 180 180"
-      fill="none"
-      aria-hidden="true"
-    >
-      <path
-        d="M45 150 Q90 138 135 150"
-        stroke="#0F3D2E"
-        strokeWidth="5"
-        strokeLinecap="round"
-      />
-      <path
-        d="M78 148 L84 88 L72 66 L91 79 L105 58 L101 87 L112 148 Z"
-        fill="#0F3D2E"
-      />
-      <path
-        d="M89 82 C65 77 50 63 39 44 M96 80 C112 68 126 53 140 34 M86 77 C77 56 77 38 80 22 M101 77 C104 52 99 36 95 20"
-        stroke="#0F3D2E"
-        strokeWidth="7"
-        strokeLinecap="round"
-      />
-      <path
-        d="M32 48 C12 38 21 14 44 18 C48 -1 77 2 82 17 C100 -1 127 8 124 25 C148 11 169 29 157 46 C174 65 150 78 131 68 C114 86 91 76 85 68 C64 84 39 72 32 48Z"
-        fill="#C9A227"
-      />
+    <svg className={className} viewBox="0 0 180 180" fill="none" aria-hidden="true">
+      <rect x="8" y="8" width="164" height="164" rx="34" fill="#075B3B" />
+      <path d="M119 43C107 31 91 25 72 25C43 25 24 41 24 64C24 86 41 97 72 104L92 108C108 111 115 117 115 126C115 136 104 143 88 143C69 143 54 136 42 122L20 142C36 160 59 169 88 169C123 169 147 152 147 125C147 103 132 91 101 84L80 80C64 76 58 72 58 64C58 56 67 50 81 50C94 50 106 55 116 66Z" fill="#FFFFFF" transform="translate(0 -7)" />
+      <path d="M19 139C61 96 111 67 161 54C143 69 130 85 121 103C137 95 151 91 166 92C138 113 108 131 75 145C87 133 98 121 106 108C78 119 49 131 19 139Z" fill="#F59A19" />
     </svg>
   );
 }
@@ -357,6 +343,9 @@ export default function App() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [orderFiles, setOrderFiles] = useState<OrderFileAdmin[]>([]);
   const [orderMessages, setOrderMessages] = useState<OrderMessageAdmin[]>([]);
+  const [inboxMessages, setInboxMessages] = useState<OrderMessageAdmin[]>([]);
+  const [inboxFiles, setInboxFiles] = useState<OrderFileAdmin[]>([]);
+  const [messageSearch, setMessageSearch] = useState("");
   const [adminMessage, setAdminMessage] = useState("");
   const [brand, setBrand] = useState<Brand | null>(null);
   const [search, setSearch] = useState("");
@@ -385,14 +374,28 @@ export default function App() {
   const [transactionReference, setTransactionReference] = useState("");
   const [refusingPaymentId, setRefusingPaymentId] = useState("");
   const [refusalReason, setRefusalReason] = useState("");
-  const [brandName, setBrandName] = useState("BAOBAB DIGITAL");
-  const [brandSlogan, setBrandSlogan] = useState("Le numérique à votre portée.");
+  const [brandName, setBrandName] = useState("SUGUMA");
+  const [brandSlogan, setBrandSlogan] = useState("Le marché sans frontières.");
   const [brandLogo, setBrandLogo] = useState("");
   const [notice, setNotice] = useState("");
   const [errorNotice, setErrorNotice] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const selectedOrder = orders.find((item) => item.id === selectedOrderId);
+  const inboxOrders = useMemo(() => {
+    const grouped = new Map<string, { order: Order; last: OrderMessageAdmin; count: number }>();
+    for (const item of inboxMessages) {
+      const order = orders.find((candidate) => candidate.id === item.ordre_id);
+      if (!order) continue;
+      const current = grouped.get(order.id);
+      if (!current) grouped.set(order.id, { order, last: item, count: 1 });
+      else current.count += 1;
+    }
+    const value = messageSearch.trim().toLocaleLowerCase();
+    return [...grouped.values()]
+      .filter(({ order }) => !value || [order.nom_client, order.telephone_client, order.reference].some((v) => v?.toLocaleLowerCase().includes(value)))
+      .sort((a, b) => new Date(b.last.created_at).getTime() - new Date(a.last.created_at).getTime());
+  }, [inboxMessages, orders, messageSearch]);
   const selectedDetails = details.filter(
     (item) => item.ordre_id === selectedOrderId
   );
@@ -476,6 +479,8 @@ export default function App() {
       expensesResult,
       historyResult,
       brandResult,
+      inboxResult,
+      inboxFilesResult,
     ] = await Promise.all([
       supabase.from("ordres").select("*").order("created_at", { ascending: false }),
       supabase.from("clients").select("*").order("created_at", { ascending: false }),
@@ -484,6 +489,8 @@ export default function App() {
       supabase.from("depenses").select("*").order("date_depense", { ascending: false }),
       supabase.from("historique_commandes").select("*").order("date_modification", { ascending: false }),
       supabase.from("parametres_marque").select("*").limit(1).maybeSingle(),
+      supabase.from("messages").select("*").order("created_at", { ascending: false }),
+      supabase.from("fichiers_commandes").select("*").order("created_at", { ascending: false }),
     ]);
 
     const errors: string[] = [];
@@ -522,6 +529,17 @@ export default function App() {
       errors.push("historique : " + historyResult.error.message);
     } else {
       setHistory((historyResult.data ?? []) as HistoryItem[]);
+    }
+
+    if (inboxResult.error) {
+      errors.push("messages : " + inboxResult.error.message);
+    } else {
+      setInboxMessages((inboxResult.data ?? []) as OrderMessageAdmin[]);
+    }
+    if (inboxFilesResult.error) {
+      errors.push("fichiers de conversation : " + inboxFilesResult.error.message);
+    } else {
+      setInboxFiles((inboxFilesResult.data ?? []) as OrderFileAdmin[]);
     }
 
     if (brandResult.error) {
@@ -631,6 +649,25 @@ export default function App() {
     }
     window.open(data.signedUrl, "_blank", "noopener,noreferrer");
   }
+
+  useEffect(() => {
+    if (!session || !isAdmin) return;
+    const channel = supabase.channel("gestion-messages-live")
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, async (payload) => {
+        const { data } = await supabase.from("messages").select("*").order("created_at", { ascending: false });
+        if (data) setInboxMessages(data as OrderMessageAdmin[]);
+        const changedOrderId = (payload.new as { ordre_id?: string } | null)?.ordre_id;
+        if (changedOrderId && changedOrderId === selectedOrderId) {
+          const { data: thread } = await supabase.from("messages").select("*").eq("ordre_id", changedOrderId).order("created_at", { ascending: true });
+          if (thread) setOrderMessages(thread as OrderMessageAdmin[]);
+        }
+      })
+      .on("postgres_changes", { event: "*", schema: "public", table: "fichiers_commandes" }, async () => {
+        const { data } = await supabase.from("fichiers_commandes").select("*").order("created_at", { ascending: false });
+        if (data) setInboxFiles(data as OrderFileAdmin[]);
+      }).subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [session, isAdmin, selectedOrderId]);
 
   useEffect(() => {
     let active = true;
@@ -1222,7 +1259,7 @@ export default function App() {
   async function confirmPayment(paymentId: string) {
     if (
       !window.confirm(
-        "As-tu vérifié directement que l'argent est réellement arrivé sur le compte ou le portefeuille BAOBAB DIGITAL ? Ne confirme pas uniquement sur la base d'une capture d'écran ou d'un SMS."
+        "As-tu vérifié directement que l'argent est réellement arrivé sur le compte ou le portefeuille SUGUMA ? Ne confirme pas uniquement sur la base d'une capture d'écran ou d'un SMS."
       )
     ) {
       return;
@@ -1351,7 +1388,7 @@ export default function App() {
       });
 
     receiptWindow.document.write(
-      "<!doctype html><html lang='fr'><head><meta charset='UTF-8'><title>Reçu BAOBAB DIGITAL</title></head><body>Préparation du reçu...</body></html>"
+      "<!doctype html><html lang='fr'><head><meta charset='UTF-8'><title>Reçu SUGUMA</title></head><body>Préparation du reçu...</body></html>"
     );
 
     const { data: orderDetails, error } = await supabase
@@ -1384,7 +1421,7 @@ export default function App() {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Reçu BAOBAB DIGITAL</title>
+        <title>Reçu SUGUMA</title>
         <style>
           *{box-sizing:border-box}
           body{font-family:Arial,Helvetica,sans-serif;color:#0F3D2E;margin:0;padding:20px;background:#f5f7f4}
@@ -1452,7 +1489,7 @@ export default function App() {
     return (
       <div className="loading">
         <BaobabIcon className="loading-icon" />
-        <span>Chargement de BAOBAB DIGITAL...</span>
+        <span>Chargement de SUGUMA...</span>
       </div>
     );
   }
@@ -1464,8 +1501,8 @@ export default function App() {
           <div className="login-logo">
             <BaobabIcon className="brand-mark" />
           </div>
-          <h1>BAOBAB DIGITAL</h1>
-          <p className="subtitle">Le numérique à votre portée.</p>
+          <h1>SUGUMA</h1>
+          <p className="subtitle">Le marché sans frontières.</p>
           <p className="login-intro">Espace de gestion sécurisé</p>
           <form onSubmit={handleLogin}>
             <label htmlFor="login-email">Adresse e-mail</label>
@@ -1723,6 +1760,36 @@ export default function App() {
             </>
           )}
 
+          {section === "messages" && (
+            <section className="inbox-page" aria-label="Messagerie des clients">
+              <div className="inbox-heading">
+                <div><h2 className="section-heading">Boîte de réception</h2><p>Échange directement avec tes clients, comme dans une messagerie.</p></div>
+                <span className="inbox-total">{inboxOrders.length} conversation{inboxOrders.length > 1 ? "s" : ""}</span>
+              </div>
+              <div className="inbox-layout">
+                <aside className="inbox-list card">
+                  <label className="inbox-search"><Search size={18}/><input value={messageSearch} onChange={(event) => setMessageSearch(event.target.value)} placeholder="Rechercher un client…" /></label>
+                  {inboxOrders.length === 0 ? <p className="empty-text inbox-empty">Aucune conversation pour le moment. Les messages des clients apparaîtront ici.</p> : inboxOrders.map(({ order, last, count }) => (
+                    <button type="button" key={order.id} className={selectedOrderId === order.id ? "inbox-contact active" : "inbox-contact"} onClick={() => { openOrder(order); }}>
+                      <span className="inbox-avatar">{order.nom_client.trim().charAt(0).toLocaleUpperCase() || "C"}</span>
+                      <span className="inbox-contact-copy"><strong>{order.nom_client}</strong><small>{last.contenu || (last.chemin_audio ? "🎤 Message vocal" : "Pièce jointe")}</small><small>{order.reference}</small></span>
+                      <span className="inbox-contact-meta"><small>{new Date(last.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" })}</small><i>{count}</i></span>
+                    </button>
+                  ))}
+                </aside>
+                <section className="inbox-thread card">
+                  {!selectedOrder ? <div className="inbox-welcome"><MessageCircle size={42}/><h3>Ta messagerie SUGUMA</h3><p>Sélectionne une conversation à gauche pour lire les messages et répondre au client.</p></div> : <>
+                    <header className="inbox-thread-head"><span className="inbox-avatar">{selectedOrder.nom_client.trim().charAt(0).toLocaleUpperCase() || "C"}</span><div><strong>{selectedOrder.nom_client}</strong><small>{selectedOrder.telephone_client} · Commande {selectedOrder.reference}</small></div><button type="button" className="btn btn-secondary btn-small" onClick={() => navigate("orders")}>Voir commande</button></header>
+                    <div className="inbox-thread-body">
+                      {orderMessages.length === 0 && !inboxFiles.some((file) => file.ordre_id === selectedOrderId && file.type_fichier !== "livrable") ? <p className="empty-text">Aucun message dans cette conversation.</p> : <>{orderMessages.map((item) => <div className={item.expediteur === "admin" ? "admin-chat-message admin" : "admin-chat-message client"} key={item.id}><small>{item.expediteur === "admin" ? "SUGUMA" : "Client"} · {dateText(item.created_at)}</small>{item.contenu && <p>{item.contenu}</p>}{item.chemin_audio && <button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(item.chemin_audio!)}>Écouter le vocal</button>}</div>)}{inboxFiles.filter((file) => file.ordre_id === selectedOrderId && file.type_fichier !== "livrable").map((file) => <div className="admin-chat-message client" key={"file-"+file.id}><small>Document envoyé · {dateText(file.created_at)}</small><p>📎 {file.nom_fichier}</p><button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(file.chemin_stockage)}>Ouvrir le document</button></div>)}</>}
+                    </div>
+                    <form className="inbox-compose" onSubmit={sendAdminOrderMessage}><textarea className="input" value={adminMessage} onChange={(event) => setAdminMessage(event.target.value)} placeholder="Écrire un message…" maxLength={2000}/><button className="btn btn-primary" disabled={saving || !adminMessage.trim()}><MessageCircle size={17}/> Envoyer</button></form>
+                  </>}
+                </section>
+              </div>
+            </section>
+          )}
+
           {section === "orders" && (
             <>
               <h2 className="section-heading">Commandes des clients</h2>
@@ -1882,7 +1949,7 @@ export default function App() {
                         <div className="admin-order-chat">
                           {orderMessages.length === 0 ? <p className="empty-text">Aucun message pour le moment.</p> : orderMessages.map((item) => (
                             <div className={item.expediteur === "admin" ? "admin-chat-message admin" : "admin-chat-message client"} key={item.id}>
-                              <small>{item.expediteur === "admin" ? "BAOBAB DIGITAL" : "Client"} · {dateText(item.created_at)}</small>
+                              <small>{item.expediteur === "admin" ? "SUGUMA" : "Client"} · {dateText(item.created_at)}</small>
                               {item.contenu && <p>{item.contenu}</p>}
                               {item.chemin_audio && <button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(item.chemin_audio!)}>Écouter le vocal</button>}
                             </div>
@@ -2356,6 +2423,8 @@ export default function App() {
             </>
           )}
 
+          {section === "client_design" && <ClientAppearance />}
+
           {section === "settings" && (
             <>
               <h2 className="section-heading">Identité de la marque</h2>
@@ -2377,7 +2446,7 @@ export default function App() {
                 {(brandLogoPreview || brandLogo) && (
                   <div className="logo-preview">
                     <p>Aperçu du logo</p>
-                    <img src={brandLogoPreview || brandLogo} alt="Logo BAOBAB DIGITAL" />
+                    <img src={brandLogoPreview || brandLogo} alt="Logo SUGUMA" />
                   </div>
                 )}
                 <p className="help-text">L'image est automatiquement optimisée avant son enregistrement.</p>
@@ -2386,7 +2455,7 @@ export default function App() {
                 </button>
               </form>
               <Notice>
-                Formats acceptés selon la galerie : image. Le logo et les icônes sont optimisés puis enregistrés dans l'espace de stockage BAOBAB DIGITAL.
+                Formats acceptés selon la galerie : image. Le logo et les icônes sont optimisés puis enregistrés dans l'espace de stockage SUGUMA.
               </Notice>
             </>
           )}
