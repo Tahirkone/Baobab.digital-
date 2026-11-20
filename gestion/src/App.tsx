@@ -28,9 +28,11 @@ import {
   TrendingUp,
   Archive,
   ArchiveRestore,
+  MonitorCog,
 } from "lucide-react";
 import { supabase } from "./lib/supabase";
 import PublicRequest from "./PublicRequest";
+import ClientAppearance from "./ClientAppearance";
 
 type Section =
   | "dashboard"
@@ -40,7 +42,8 @@ type Section =
   | "services"
   | "payments"
   | "expenses"
-  | "settings";
+  | "settings"
+  | "client_design";
 
 type Order = {
   id: string;
@@ -161,6 +164,7 @@ const menu = [
   { id: "payments", label: "Paiements", icon: CreditCard },
   { id: "expenses", label: "Dépenses", icon: Receipt },
   { id: "settings", label: "Paramètres", icon: Settings },
+  { id: "client_design", label: "App Client", icon: MonitorCog },
 ] as const;
 
 const titles: Record<Section, string> = {
@@ -172,6 +176,7 @@ const titles: Record<Section, string> = {
   payments: "Paiements",
   expenses: "Dépenses",
   settings: "Paramètres",
+  client_design: "Personnaliser l’application Client",
 };
 
 function money(value: number) {
@@ -2417,6 +2422,8 @@ export default function App() {
               </div>
             </>
           )}
+
+          {section === "client_design" && <ClientAppearance />}
 
           {section === "settings" && (
             <>
