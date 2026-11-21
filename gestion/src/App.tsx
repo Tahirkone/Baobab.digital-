@@ -1581,11 +1581,11 @@ export default function App() {
               <button
                 type="button"
                 key={item.id}
-                className={section === item.id ? "nav-item active" : "nav-item"}
+                className={section === item.id ? `nav-item nav-item-${item.id} active` : `nav-item nav-item-${item.id}`}
                 aria-current={section === item.id ? "page" : undefined}
                 onClick={() => navigate(item.id)}
               >
-                <Icon size={20} />
+                <Icon size={20} className="nav-icon" />
                 <span>{item.label}</span>
               </button>
             );
@@ -1645,19 +1645,19 @@ export default function App() {
               <h2 className="section-heading">Actions rapides</h2>
               <div className="quick-grid">
                 <button type="button" className="quick-tile" onClick={() => navigate("orders")}>
-                  <span className="quick-icon"><ShoppingBag size={24} /></span>
+                  <span className="quick-icon quick-icon-orders"><ShoppingBag size={24} /></span>
                   <span>Voir les commandes</span>
                 </button>
                 <button type="button" className="quick-tile" onClick={() => navigate("payments")}>
-                  <span className="quick-icon"><CreditCard size={24} /></span>
+                  <span className="quick-icon quick-icon-payments"><CreditCard size={24} /></span>
                   <span>Enregistrer un paiement</span>
                 </button>
                 <button type="button" className="quick-tile" onClick={() => navigate("expenses")}>
-                  <span className="quick-icon"><Receipt size={24} /></span>
+                  <span className="quick-icon quick-icon-expenses"><Receipt size={24} /></span>
                   <span>Ajouter une dépense</span>
                 </button>
                 <button type="button" className="quick-tile" onClick={() => navigate("services")}>
-                  <span className="quick-icon"><BriefcaseBusiness size={24} /></span>
+                  <span className="quick-icon quick-icon-services"><BriefcaseBusiness size={24} /></span>
                   <span>Gérer les services</span>
                 </button>
               </div>
@@ -1665,12 +1665,12 @@ export default function App() {
               <h2 className="section-heading">Mon argent</h2>
               <div className="finance-grid">
                 <article className="finance-card finance-in">
-                  <div className="finance-icon"><TrendingUp size={22} /></div>
+                  <div className="finance-icon finance-icon-revenue"><TrendingUp size={22} /></div>
                   <p>Recettes encaissées</p>
                   <strong>{money(revenue)}</strong>
                 </article>
                 <article className="finance-card finance-out">
-                  <div className="finance-icon"><Receipt size={22} /></div>
+                  <div className="finance-icon finance-icon-expenses"><Receipt size={22} /></div>
                   <p>Dépenses</p>
                   <strong>{money(totalExpenses)}</strong>
                 </article>
@@ -1681,7 +1681,7 @@ export default function App() {
                       : "finance-card finance-balance"
                   }
                 >
-                  <div className="finance-icon"><Wallet size={22} /></div>
+                  <div className="finance-icon finance-icon-balance"><Wallet size={22} /></div>
                   <p>Solde</p>
                   <strong>{money(balance)}</strong>
                 </article>
