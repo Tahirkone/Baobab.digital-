@@ -1,12 +1,12 @@
 {
-  "name": "SUGUMA CLIENT",
-  "short_name": "Suguma Client",
-  "description": "Vos services numériques à portée de main.",
+  "name": "CYBER",
+  "short_name": "CYBER",
+  "description": "Vos documents, notre expertise digitale.",
   "lang": "fr",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#f7f8f5",
-  "theme_color": "#075b3b",
+  "background_color": "#ffffff",
+  "theme_color": "#1557E8",
   "icons": [
     {
       "src": "/icon.svg",
