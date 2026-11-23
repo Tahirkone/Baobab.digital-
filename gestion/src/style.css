@@ -1,14 +1,14 @@
 :root {
-  --green: #0F3D2E;
-  --green-dark: #092B20;
-  --green-light: #E8F1EC;
-  --gold: #C9A227;
-  --gold-soft: #F6EBC4;
-  --bg: #F5F7F4;
+  --green: #1557E8;
+  --green-dark: #103FAF;
+  --green-light: #EAF0FF;
+  --gold: #6B91F2;
+  --gold-soft: #EAF0FF;
+  --bg: #F7F9FF;
   --white: #FFFFFF;
-  --ink: #1B2A22;
-  --muted: #64736A;
-  --line: #E3E9E4;
+  --ink: #17243A;
+  --muted: #667085;
+  --line: #E5EAF5;
   --danger: #C0392B;
   --success: #1E8449;
   --warn: #946B0A;
