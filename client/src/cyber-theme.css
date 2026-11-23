@@ -1,0 +1,80 @@
+/* CYBER CLIENT — unified black and white theme.
+   These selectors intentionally match the existing App.tsx class names. */
+:root {
+  color-scheme: light;
+  --cyber-black: #000;
+  --cyber-dark: #222;
+  --cyber-gray: #777;
+  --cyber-mid: #aaa;
+  --cyber-line: #e5e5e5;
+  --cyber-soft: #f5f5f5;
+  --green: #000 !important;
+  --gold: #222 !important;
+  --muted: #777 !important;
+  --line: #e5e5e5 !important;
+}
+html, body { background:#fff; color:#000; }
+button, input, textarea, select { accent-color:#000; }
+.app-shell { color:#000; background:#fff !important; --green:#000 !important; --gold:#222 !important; --orange:#222 !important; }
+.topbar, footer, .service-section, .auth-modal, .panel, .step, .service-card,
+.order-row, .conversation-card, .receipt-print { background:#fff !important; }
+.topbar { border-color:#e5e5e5 !important; }
+.brand, .brand strong, .brand-icon, .nav button, .text-button, .cart-button,
+.account-button, .icon-button, .back-link, .order-row, .order-icon,
+.panel h2, .service-bottom strong, .empty-state strong, .workspace-heading h1,
+.step h3, .payment-total, .chat-message, .receipt-head { color:#000 !important; }
+.brand-icon, .doc-mark, .service-icon, .service-icon-fallback, .order-icon,
+.modal-symbol, .empty-state, .catalog-promo, .catalog-search, .cart-summary,
+.step, .panel, .service-card, .order-row, .conversation-card {
+  background:#f5f5f5 !important;
+  border-color:#e5e5e5 !important;
+}
+.brand img { filter:grayscale(1); }
+.eyebrow, .hero h1, .hero h1 em, .section-intro h2, .steps-section h2,
+.contact-strip h2, .hero-copy>p, .section-intro p, .step p,
+.service-card p, .workspace-heading p, .muted, .order-info span,
+.order-price, footer { color:#555 !important; }
+.primary-button, .service-bottom button, .send-button, .cart-summary button,
+.contact-strip>a, .full-button {
+  color:#fff !important; background:#000 !important; border:1px solid #000 !important;
+}
+.primary-button:hover, .service-bottom button:hover, .send-button:hover,
+.cart-summary button:hover { background:#333 !important; }
+.secondary-button, .account-button, .icon-button, .upload-button,
+.print-receipt, .recording-button {
+  color:#000 !important; background:#fff !important; border:1px solid #d8d8d8 !important;
+}
+.hero-art, .catalog-promo-art { filter:grayscale(1); }
+.hero-art-caption { color:#000 !important; background:rgba(255,255,255,.96) !important; border-color:#ddd !important; }
+.hero-art-dot { background:#000 !important; }
+.service-icon img, .service-card-art img { filter:grayscale(1); }
+.quantity-pill, .status, .status.good, .status.bad, .status.pending {
+  color:#222 !important; background:#eee !important; border:1px solid #ddd !important;
+}
+.notice, .customer-note, .paid-note, .payment-entry, .file-row,
+.chat-message.mine, .chat-message.theirs {
+  color:#222 !important; background:#f5f5f5 !important; border-color:#e5e5e5 !important;
+}
+.notice button, .audio-link, .switch-auth button { color:#000 !important; }
+.catalog-search:focus-within, .auth-modal input:focus, .chat-form textarea:focus,
+.order-form textarea:focus { border-color:#777 !important; box-shadow:0 0 0 3px #eee !important; }
+.catalog-search input, .auth-modal input, .chat-form textarea,
+.order-form textarea, .payment-form input, .payment-form select,
+.profile-form input { color:#000 !important; background:#fff !important; border-color:#ddd !important; }
+.modal-backdrop { background:rgba(0,0,0,.72) !important; }
+.mobile-bottom-nav { background:#fff !important; border-color:#e5e5e5 !important; }
+.mobile-nav-item, .mobile-nav-item.active { color:#555 !important; }
+.mobile-nav-item.active { border-color:#000 !important; }
+.contact-strip { color:#fff !important; background:#111 !important; }
+.contact-strip h2, .contact-strip p { color:#fff !important; }
+.receipt-print { border:1px solid #ddd !important; }
+.receipt-total, .detail-total { color:#000 !important; border-color:#ddd !important; }
+:focus-visible { outline:2px solid #000; outline-offset:3px; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior:auto !important; animation-duration:.01ms !important; transition-duration:.01ms !important; }
+}
+@media print {
+  .topbar, .mobile-bottom-nav, footer, .workspace-heading, .back-link,
+  .main-column, .side-column > .panel > :not(.receipt-print) { display:none !important; }
+  .receipt-print { display:block !important; color:#000 !important; background:#fff !important; }
+}
