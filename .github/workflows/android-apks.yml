@@ -83,7 +83,6 @@ jobs:
       - name: Configure Android release signing
         if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_PASSWORD != '' }}
         working-directory: ${{ matrix.app }}/android
-        env:
         run: |
           echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > cyber-release.jks
           cat >> app/build.gradle <<'GRADLE'
@@ -105,11 +104,11 @@ jobs:
           }
           GRADLE
       - name: Build signed release APK
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_PASSWORD != '' }}
         working-directory: ${{ matrix.app }}/android
         run: ./gradlew assembleRelease
       - name: Upload signed release APK
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && secrets.ANDROID_KEY_ALIAS != '' && secrets.ANDROID_KEYSTORE_PASSWORD != '' && secrets.ANDROID_KEY_PASSWORD != '' }}
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_PASSWORD != '' }}
         uses: actions/upload-artifact@v4
         with:
           name: cyber-${{ matrix.app }}-android-release-apk
