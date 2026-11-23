@@ -152,7 +152,7 @@ export async function onRequestPost({ request, env }: PagesContext) {
 
     if (rpcResponse.status === 401 || rpcResponse.status === 403) {
       return json(
-        { error: "La connexion sécurisée au serveur est invalide. Contacte BAOBAB DIGITAL." },
+        { error: "La connexion sécurisée au serveur est invalide. Contacte CYBER." },
         503,
       );
     }
