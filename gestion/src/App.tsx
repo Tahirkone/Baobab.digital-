@@ -231,13 +231,7 @@ function paymentMethodText(value: string) {
 }
 
 function BaobabIcon({ className }: { className?: string }) {
-  return (
-    <svg className={className} viewBox="0 0 180 180" fill="none" aria-hidden="true">
-      <rect x="8" y="8" width="164" height="164" rx="34" fill="#075B3B" />
-      <path d="M119 43C107 31 91 25 72 25C43 25 24 41 24 64C24 86 41 97 72 104L92 108C108 111 115 117 115 126C115 136 104 143 88 143C69 143 54 136 42 122L20 142C36 160 59 169 88 169C123 169 147 152 147 125C147 103 132 91 101 84L80 80C64 76 58 72 58 64C58 56 67 50 81 50C94 50 106 55 116 66Z" fill="#FFFFFF" transform="translate(0 -7)" />
-      <path d="M19 139C61 96 111 67 161 54C143 69 130 85 121 103C137 95 151 91 166 92C138 113 108 131 75 145C87 133 98 121 106 108C78 119 49 131 19 139Z" fill="#F59A19" />
-    </svg>
-  );
+  return <img className={className} src="/icon.svg" alt="CYBER" />;
 }
 
 function browserNotify(title:string,body:string){if(typeof window==="undefined"||!("Notification" in window)||Notification.permission!=="granted")return;new Notification(title,{body,icon:"/favicon.ico"});}
@@ -377,8 +371,8 @@ export default function App() {
   const [transactionReference, setTransactionReference] = useState("");
   const [refusingPaymentId, setRefusingPaymentId] = useState("");
   const [refusalReason, setRefusalReason] = useState("");
-  const [brandName, setBrandName] = useState("SUGUMA");
-  const [brandSlogan, setBrandSlogan] = useState("Le marché sans frontières.");
+  const [brandName, setBrandName] = useState("CYBER");
+  const [brandSlogan, setBrandSlogan] = useState("Vos documents, notre expertise digitale.");
   const [brandLogo, setBrandLogo] = useState("");
   const [notice, setNotice] = useState("");
   const [errorNotice, setErrorNotice] = useState(false);
@@ -1113,7 +1107,7 @@ export default function App() {
     const price = Number(servicePrice);
 
     if (/photocopie|photocopies|impression|impressions|imprimer|imprimante|imprimantes/i.test(serviceName) || !serviceName.trim() || !Number.isInteger(price) || price < 0) {
-      showNotice(/photocopie|impression|imprimer|imprimante/i.test(serviceName) ? "Cette prestation ne fait pas partie du catalogue SUGUMA." : "Vérifie le nom et le tarif du service.", true);
+      showNotice(/photocopie|impression|imprimer|imprimante/i.test(serviceName) ? "Cette prestation ne fait pas partie du catalogue CYBER." : "Vérifie le nom et le tarif du service.", true);
       return;
     }
 
@@ -1281,7 +1275,7 @@ export default function App() {
   async function confirmPayment(paymentId: string) {
     if (
       !window.confirm(
-        "As-tu vérifié directement que l'argent est réellement arrivé sur le compte ou le portefeuille SUGUMA ? Ne confirme pas uniquement sur la base d'une capture d'écran ou d'un SMS."
+        "As-tu vérifié directement que l'argent est réellement arrivé sur le compte ou le portefeuille CYBER ? Ne confirme pas uniquement sur la base d'une capture d'écran ou d'un SMS."
       )
     ) {
       return;
@@ -1410,7 +1404,7 @@ export default function App() {
       });
 
     receiptWindow.document.write(
-      "<!doctype html><html lang='fr'><head><meta charset='UTF-8'><title>Reçu SUGUMA</title></head><body>Préparation du reçu...</body></html>"
+      "<!doctype html><html lang='fr'><head><meta charset='UTF-8'><title>Reçu CYBER</title></head><body>Préparation du reçu...</body></html>"
     );
 
     const { data: orderDetails, error } = await supabase
@@ -1443,7 +1437,7 @@ export default function App() {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <title>Reçu SUGUMA</title>
+        <title>Reçu CYBER</title>
         <style>
           *{box-sizing:border-box}
           body{font-family:Arial,Helvetica,sans-serif;color:#0F3D2E;margin:0;padding:20px;background:#f5f7f4}
@@ -1511,7 +1505,7 @@ export default function App() {
     return (
       <div className="loading">
         <BaobabIcon className="loading-icon" />
-        <span>Chargement de SUGUMA...</span>
+        <span>Chargement de CYBER...</span>
       </div>
     );
   }
@@ -1523,8 +1517,8 @@ export default function App() {
           <div className="login-logo">
             <BaobabIcon className="brand-mark" />
           </div>
-          <h1>SUGUMA</h1>
-          <p className="subtitle">Le marché sans frontières.</p>
+          <h1>CYBER</h1>
+          <p className="subtitle">Vos documents, notre expertise digitale.</p>
           <p className="login-intro">Espace de gestion sécurisé</p>
           <form onSubmit={handleLogin}>
             <label htmlFor="login-email">Adresse e-mail</label>
@@ -1804,10 +1798,10 @@ export default function App() {
                   ))}
                 </aside>
                 <section className="inbox-thread card">
-                  {!selectedOrder ? <div className="inbox-welcome"><MessageCircle size={42}/><h3>Ta messagerie SUGUMA</h3><p>Sélectionne une conversation à gauche pour lire les messages et répondre au client.</p></div> : <>
+                  {!selectedOrder ? <div className="inbox-welcome"><MessageCircle size={42}/><h3>Ta messagerie CYBER</h3><p>Sélectionne une conversation à gauche pour lire les messages et répondre au client.</p></div> : <>
                     <header className="inbox-thread-head"><span className="inbox-avatar">{selectedOrder.nom_client.trim().charAt(0).toLocaleUpperCase() || "C"}</span><div><strong>{selectedOrder.nom_client}</strong><small>{selectedOrder.telephone_client} · Commande {selectedOrder.reference}</small></div><button type="button" className="btn btn-secondary btn-small" onClick={() => navigate("orders")}>Voir commande</button></header>
                     <div className="inbox-thread-body">
-                      {orderMessages.length === 0 && !inboxFiles.some((file) => file.ordre_id === selectedOrderId && file.type_fichier !== "livrable") ? <p className="empty-text">Aucun message dans cette conversation.</p> : <>{orderMessages.map((item) => <div className={item.expediteur === "admin" ? "admin-chat-message admin" : "admin-chat-message client"} key={item.id}><small>{item.expediteur === "admin" ? "SUGUMA" : "Client"} · {dateText(item.created_at)}</small>{item.contenu && <p>{item.contenu}</p>}{item.chemin_audio && <button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(item.chemin_audio!)}>Écouter le vocal</button>}</div>)}{inboxFiles.filter((file) => file.ordre_id === selectedOrderId && file.type_fichier !== "livrable").map((file) => <div className="admin-chat-message client" key={"file-"+file.id}><small>Document envoyé · {dateText(file.created_at)}</small><p>📎 {file.nom_fichier}</p><button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(file.chemin_stockage)}>Ouvrir le document</button></div>)}</>}
+                      {orderMessages.length === 0 && !inboxFiles.some((file) => file.ordre_id === selectedOrderId && file.type_fichier !== "livrable") ? <p className="empty-text">Aucun message dans cette conversation.</p> : <>{orderMessages.map((item) => <div className={item.expediteur === "admin" ? "admin-chat-message admin" : "admin-chat-message client"} key={item.id}><small>{item.expediteur === "admin" ? "CYBER" : "Client"} · {dateText(item.created_at)}</small>{item.contenu && <p>{item.contenu}</p>}{item.chemin_audio && <button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(item.chemin_audio!)}>Écouter le vocal</button>}</div>)}{inboxFiles.filter((file) => file.ordre_id === selectedOrderId && file.type_fichier !== "livrable").map((file) => <div className="admin-chat-message client" key={"file-"+file.id}><small>Document envoyé · {dateText(file.created_at)}</small><p>📎 {file.nom_fichier}</p><button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(file.chemin_stockage)}>Ouvrir le document</button></div>)}</>}
                     </div>
                     <form className="inbox-compose" onSubmit={sendAdminOrderMessage}><textarea className="input" value={adminMessage} onChange={(event) => setAdminMessage(event.target.value)} placeholder="Écrire un message…" maxLength={2000}/><button className="btn btn-primary" disabled={saving || !adminMessage.trim()}><MessageCircle size={17}/> Envoyer</button></form>
                   </>}
@@ -1975,7 +1969,7 @@ export default function App() {
                         <div className="admin-order-chat">
                           {orderMessages.length === 0 ? <p className="empty-text">Aucun message pour le moment.</p> : orderMessages.map((item) => (
                             <div className={item.expediteur === "admin" ? "admin-chat-message admin" : "admin-chat-message client"} key={item.id}>
-                              <small>{item.expediteur === "admin" ? "SUGUMA" : "Client"} · {dateText(item.created_at)}</small>
+                              <small>{item.expediteur === "admin" ? "CYBER" : "Client"} · {dateText(item.created_at)}</small>
                               {item.contenu && <p>{item.contenu}</p>}
                               {item.chemin_audio && <button type="button" className="btn btn-secondary btn-small" onClick={() => openPrivateOrderFile(item.chemin_audio!)}>Écouter le vocal</button>}
                             </div>
@@ -2472,7 +2466,7 @@ export default function App() {
                 {(brandLogoPreview || brandLogo) && (
                   <div className="logo-preview">
                     <p>Aperçu du logo</p>
-                    <img src={brandLogoPreview || brandLogo} alt="Logo SUGUMA" />
+                    <img src={brandLogoPreview || brandLogo} alt="Logo CYBER" />
                   </div>
                 )}
                 <p className="help-text">L'image est automatiquement optimisée avant son enregistrement.</p>
@@ -2481,7 +2475,7 @@ export default function App() {
                 </button>
               </form>
               <Notice>
-                Formats acceptés selon la galerie : image. Le logo et les icônes sont optimisés puis enregistrés dans l'espace de stockage SUGUMA.
+                Formats acceptés selon la galerie : image. Le logo et les icônes sont optimisés puis enregistrés dans l'espace de stockage CYBER.
               </Notice>
             </>
           )}

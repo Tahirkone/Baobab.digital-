@@ -1,14 +1,19 @@
 {
-  "name": "SUGUMA GESTION",
-  "short_name": "Suguma Gestion",
-  "description": "Espace privé de gestion SUGUMA.",
+  "name": "CYBER GESTION",
+  "short_name": "CYBER GESTION",
+  "description": "Espace privé d'administration de CYBER.",
   "lang": "fr",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#075b3b",
+  "theme_color": "#1557E8",
   "icons": [
-    { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
   ]
 }

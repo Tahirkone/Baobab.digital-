@@ -2,7 +2,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
 
 const config: CapacitorConfig = {
   appId: "bf.baobabdigital.client",
-  appName: "SUGUMA CLIENT",
+  appName: "CYBER",
   webDir: "dist",
   bundledWebRuntime: false,
 };

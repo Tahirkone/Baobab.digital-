@@ -1,4 +1,4 @@
-name: Build BAOBAB DIGITAL Android APKs
+name: Build CYBER Android APKs
 on:
   pull_request:
     paths:
@@ -22,6 +22,10 @@ jobs:
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -47,7 +51,7 @@ jobs:
       - name: Sync Capacitor
         working-directory: ${{ matrix.app }}
         run: npx cap sync android
-      - name: Render BAOBAB DIGITAL launcher icon
+      - name: Render CYBER launcher icon
         working-directory: ${{ matrix.app }}
         run: |
           python3 -m pip install --quiet cairosvg pillow
@@ -55,8 +59,8 @@ jobs:
           import cairosvg
           from pathlib import Path
           from PIL import Image
-          cairosvg.svg2png(url="public/icon.svg", write_to="/tmp/baobab-icon.png", output_width=512, output_height=512)
-          source = Image.open("/tmp/baobab-icon.png").convert("RGBA")
+          cairosvg.svg2png(url="public/icon.svg", write_to="/tmp/cyber-icon.png", output_width=512, output_height=512)
+          source = Image.open("/tmp/cyber-icon.png").convert("RGBA")
           res = Path("android/app/src/main/res")
           sizes = {"mdpi":48,"hdpi":72,"xhdpi":96,"xxhdpi":144,"xxxhdpi":192}
           for density, size in sizes.items():
@@ -72,7 +76,42 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: baobab-digital-${{ matrix.app }}-android-apk
+          name: cyber-${{ matrix.app }}-android-apk
           path: ${{ matrix.app }}/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
+      - name: Configure Android release signing
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_PASSWORD != '' }}
+        working-directory: ${{ matrix.app }}/android
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > cyber-release.jks
+          cat >> app/build.gradle <<'GRADLE'
+
+          android {
+            signingConfigs {
+              release {
+                storeFile file("../cyber-release.jks")
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+              }
+            }
+            buildTypes {
+              release {
+                signingConfig signingConfigs.release
+              }
+            }
+          }
+          GRADLE
+      - name: Build signed release APK
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_PASSWORD != '' }}
+        working-directory: ${{ matrix.app }}/android
+        run: ./gradlew assembleRelease
+      - name: Upload signed release APK
+        if: ${{ env.ANDROID_KEYSTORE_BASE64 != '' && env.ANDROID_KEY_ALIAS != '' && env.ANDROID_KEYSTORE_PASSWORD != '' && env.ANDROID_KEY_PASSWORD != '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: cyber-${{ matrix.app }}-android-release-apk
+          path: ${{ matrix.app }}/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+          retention-days: 30
