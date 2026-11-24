@@ -719,6 +719,34 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    if (!brandLogo) return;
+    const iconUrl = brandLogo.replace(/\\/brand\\/logo\\.webp(?:\\?.*)?$/, "/brand/app-icon.png");
+    const appleIcon = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]') ?? document.createElement("link");
+    appleIcon.rel = "apple-touch-icon";
+    appleIcon.href = iconUrl;
+    if (!appleIcon.parentNode) document.head.appendChild(appleIcon);
+
+    const manifest = {
+      name: brandName || "CYBER GESTION",
+      short_name: "CYBER",
+      start_url: "/",
+      scope: "/",
+      display: "standalone",
+      background_color: "#ffffff",
+      theme_color: "#0F3D2E",
+      icons: [{ src: iconUrl, sizes: "512x512", type: "image/png", purpose: "any maskable" }]
+    };
+    const blobUrl = URL.createObjectURL(new Blob([JSON.stringify(manifest)], { type: "application/manifest+json" }));
+    const manifestLink = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+    const previousHref = manifestLink?.href;
+    if (manifestLink) manifestLink.href = blobUrl;
+    return () => {
+      URL.revokeObjectURL(blobUrl);
+      if (manifestLink && previousHref) manifestLink.href = previousHref;
+    };
+  }, [brandLogo, brandName]);
+
+  useEffect(() => {
     if (!brandLogoFile) {
       setBrandLogoPreview("");
       return;
@@ -1347,6 +1375,34 @@ export default function App() {
           });
         if (uploadError) throw uploadError;
         logoToSave = supabase.storage.from("baobab-assets").getPublicUrl(path).data.publicUrl;
+
+        const bitmap = await createImageBitmap(brandLogoFile);
+        const iconCanvas = document.createElement("canvas");
+        iconCanvas.width = 512;
+        iconCanvas.height = 512;
+        const iconContext = iconCanvas.getContext("2d");
+        if (!iconContext) {
+          bitmap.close();
+          throw new Error("Impossible de préparer l'icône de l'application.");
+        }
+        iconContext.fillStyle = "#ffffff";
+        iconContext.fillRect(0, 0, 512, 512);
+        const scale = Math.min(440 / bitmap.width, 440 / bitmap.height);
+        const width = bitmap.width * scale;
+        const height = bitmap.height * scale;
+        iconContext.drawImage(bitmap, (512 - width) / 2, (512 - height) / 2, width, height);
+        bitmap.close();
+        const iconBlob = await new Promise<Blob>((resolve, reject) => {
+          iconCanvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("La création de l'icône PNG a échoué.")), "image/png");
+        });
+        const { error: iconUploadError } = await supabase.storage
+          .from("baobab-assets")
+          .upload("brand/app-icon.png", iconBlob, {
+            cacheControl: "3600",
+            contentType: "image/png",
+            upsert: true,
+          });
+        if (iconUploadError) throw iconUploadError;
       }
 
       const values = {
