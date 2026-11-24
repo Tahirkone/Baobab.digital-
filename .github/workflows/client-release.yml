@@ -65,34 +65,20 @@ jobs:
         working-directory: client
         run: npx cap sync android
 
-      - name: Apply official Android app label and launcher icon
+      - name: Set Android app label
         working-directory: client
         run: |
-          python3 -m pip install --quiet cairosvg pillow
           python3 - <<'PY'
-          import cairosvg
           from pathlib import Path
-          from PIL import Image
-          cairosvg.svg2png(url="public/icon.svg", write_to="/tmp/cyber-client-icon.png", output_width=512, output_height=512)
-          source = Image.open("/tmp/cyber-client-icon.png").convert("RGBA")
-          res = Path("android/app/src/main/res")
-          sizes = {"mdpi":48,"hdpi":72,"xhdpi":96,"xxhdpi":144,"xxxhdpi":192}
-          for density, size in sizes.items():
-              folder = res / f"mipmap-{density}"
-              if folder.exists():
-                  icon = source.resize((size,size), Image.Resampling.LANCZOS)
-                  icon.save(folder / "ic_launcher.png")
-                  icon.save(folder / "ic_launcher_round.png")
-          strings = res / "values" / "strings.xml"
-          if strings.exists():
-              import xml.etree.ElementTree as ET
-              tree = ET.parse(strings)
-              root = tree.getroot()
-              app_name = root.find("string[@name='app_name']")
-              if app_name is None:
-                  app_name = ET.SubElement(root, "string", {"name":"app_name"})
-              app_name.text = "BAOBAB DIGITAL CLIENT"
-              tree.write(strings, encoding="utf-8", xml_declaration=True)
+          import xml.etree.ElementTree as ET
+          strings = Path("android/app/src/main/res/values/strings.xml")
+          tree = ET.parse(strings)
+          root = tree.getroot()
+          app_name = root.find("string[@name='app_name']")
+          if app_name is None:
+              app_name = ET.SubElement(root, "string", {"name":"app_name"})
+          app_name.text = "BAOBAB DIGITAL CLIENT"
+          tree.write(strings, encoding="utf-8", xml_declaration=True)
           PY
 
       - name: Configure release signing
