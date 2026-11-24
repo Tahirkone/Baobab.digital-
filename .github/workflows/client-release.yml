@@ -1,0 +1,130 @@
+name: Build CYBER CLIENT signed release APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cyber-client-release
+  cancel-in-progress: false
+
+jobs:
+  build-client-release:
+    runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+    steps:
+      - name: Check signing secrets
+        shell: bash
+        run: |
+          missing=0
+          for name in ANDROID_KEYSTORE_BASE64 ANDROID_KEY_ALIAS ANDROID_KEYSTORE_PASSWORD ANDROID_KEY_PASSWORD; do
+            if [[ -z "${!name}" ]]; then
+              echo "::error::Missing required GitHub Actions secret: $name"
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Prepare Android SDK
+        run: |
+          yes | "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" --licenses || true
+          "${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+
+      - name: Install client dependencies
+        working-directory: client
+        run: npm install --no-audit --no-fund
+
+      - name: Build client web app
+        working-directory: client
+        run: npm run build
+
+      - name: Generate Android project
+        working-directory: client
+        run: npx cap add android
+
+      - name: Sync Capacitor
+        working-directory: client
+        run: npx cap sync android
+
+      - name: Set Android app label
+        working-directory: client
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          strings = Path("android/app/src/main/res/values/strings.xml")
+          tree = ET.parse(strings)
+          root = tree.getroot()
+          app_name = root.find("string[@name='app_name']")
+          if app_name is None:
+              app_name = ET.SubElement(root, "string", {"name":"app_name"})
+          app_name.text = "BAOBAB DIGITAL CLIENT"
+          tree.write(strings, encoding="utf-8", xml_declaration=True)
+          PY
+
+      - name: Configure release signing
+        working-directory: client/android
+        shell: bash
+        run: |
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > baobab-client-release.jks
+          test -s baobab-client-release.jks
+          cat >> app/build.gradle <<'GRADLE'
+
+          android {
+            signingConfigs {
+              release {
+                storeFile file("../baobab-client-release.jks")
+                storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("ANDROID_KEY_ALIAS")
+                keyPassword System.getenv("ANDROID_KEY_PASSWORD")
+              }
+            }
+            buildTypes {
+              release {
+                signingConfig signingConfigs.release
+                minifyEnabled false
+              }
+            }
+          }
+          GRADLE
+
+      - name: Build signed release APK
+        working-directory: client/android
+        run: ./gradlew assembleRelease
+
+      - name: Verify APK signature
+        working-directory: client/android
+        run: |
+          APK="app/build/outputs/apk/release/app-release.apk"
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+          sha256sum "$APK" > app/build/outputs/apk/release/app-release.apk.sha256
+
+      - name: Upload signed client APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: baobab-digital-client-release
+          path: |
+            client/android/app/build/outputs/apk/release/app-release.apk
+            client/android/app/build/outputs/apk/release/app-release.apk.sha256
+          if-no-files-found: error
+          retention-days: 30
