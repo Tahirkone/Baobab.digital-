@@ -73,13 +73,37 @@ export default function App(){
  const refresh=useCallback(async()=>{await loadOrders();if(selected){const fresh=await supabase.from("ordres").select("id,reference,nom_client,telephone_client,montant_final,statut,statut_paiement,message_client,created_at,option_paiement_espece").eq("id",selected.id).single();if(!fresh.error)await loadOrder(fresh.data as Order)}},[loadOrders,loadOrder,selected]);
 
  useEffect(()=>{
-  let active=true;
   Promise.all([supabase.auth.getSession(),loadServices(),supabase.from("parametres_marque").select("nom_marque,slogan,chemin_logo").limit(1).maybeSingle()])
    .then(([auth,_services,b])=>{if(!active)return;setSession(auth.data.session);if(b.data)setBrand(b.data as Brand);setLoading(false)})
    .catch(e=>{if(active){setNotice(e instanceof Error?e.message:"Connexion temporairement indisponible.");setLoading(false)}});
   const {data}=supabase.auth.onAuthStateChange((_event,next)=>{setSession(next);if(!next){setOrders([]);setSelected(null);setPage("home");setMobileTab("home")}});
   return()=>{active=false;data.subscription.unsubscribe()};
  },[loadServices]);
+ useEffect(()=>{
+  const iconUrl=supabase.storage.from("baobab-assets").getPublicUrl("brand/app-icon.png").data.publicUrl+"?v="+Date.now();
+  const appleIcon=document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]')??document.createElement("link");
+  appleIcon.rel="apple-touch-icon";
+  appleIcon.href=iconUrl;
+  if(!appleIcon.parentNode)document.head.appendChild(appleIcon);
+  const manifest={
+   name:brand.nom_marque||"CYBER CLIENT",
+   short_name:"CYBER CLIENT",
+   start_url:"/",
+   scope:"/",
+   display:"standalone",
+   background_color:"#ffffff",
+   theme_color:"#0F3D2E",
+   icons:[{src:iconUrl,sizes:"512x512",type:"image/png",purpose:"any maskable"}]
+  };
+  const blobUrl=URL.createObjectURL(new Blob([JSON.stringify(manifest)],{type:"application/manifest+json"}));
+  const manifestLink=document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
+  const previousHref=manifestLink?.href;
+  if(manifestLink)manifestLink.href=blobUrl;
+  return()=>{
+   URL.revokeObjectURL(blobUrl);
+   if(manifestLink&&previousHref)manifestLink.href=previousHref;
+  };
+ },[brand.nom_marque,brand.chemin_logo]);
  useEffect(()=>{let active=true;supabase.from("suguma_client_appearance").select("*").eq("id",1).maybeSingle().then(({data,error})=>{if(!active)return;if(data)setAppearance({...defaultAppearance,...data} as Appearance);if(error)console.warn("Réglages CYBER CLIENT indisponibles",error.message)});return()=>{active=false}},[]);
  useEffect(()=>{if(session){setProfileName(String(session.user.user_metadata.full_name||""));setProfilePhone(String(session.user.user_metadata.phone||""));loadOrders().catch(e=>setNotice(e instanceof Error?e.message:"Impossible de charger les commandes."))}},[session,loadOrders]);
  useEffect(()=>{if(!session)return;const channel=supabase.channel("client-notifications-"+session.user.id)
