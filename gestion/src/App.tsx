@@ -720,7 +720,7 @@ export default function App() {
 
   useEffect(() => {
     if (!brandLogo) return;
-    const iconUrl = brandLogo.replace(/\\/brand\\/logo\\.webp(?:\\?.*)?$/, "/brand/app-icon.png");
+    const iconUrl = brandLogo.includes("/brand/logo.webp") ? brandLogo.replace("/brand/logo.webp", "/brand/app-icon.png") : brandLogo;
     const appleIcon = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]') ?? document.createElement("link");
     appleIcon.rel = "apple-touch-icon";
     appleIcon.href = iconUrl;
@@ -2525,7 +2525,7 @@ export default function App() {
                     <img src={brandLogoPreview || brandLogo} alt="Logo CYBER" />
                   </div>
                 )}
-                <p className="help-text">L'image est automatiquement optimisée avant son enregistrement.</p>
+                <p className="help-text">L’image est optimisée et sert aussi d’icône de CYBER GESTION. Après l’enregistrement, supprime l’ancien raccourci de l’écran d’accueil puis ajoute à nouveau l’application pour voir la nouvelle icône.</p>
                 <button className="btn btn-primary btn-large" disabled={saving}>
                   <Save size={18} /> Enregistrer les paramètres
                 </button>
