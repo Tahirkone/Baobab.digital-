@@ -74,6 +74,7 @@ export default function App(){
  const refresh=useCallback(async()=>{await loadOrders();if(selected){const fresh=await supabase.from("ordres").select("id,reference,nom_client,telephone_client,montant_final,statut,statut_paiement,message_client,created_at,option_paiement_espece").eq("id",selected.id).single();if(!fresh.error)await loadOrder(fresh.data as Order)}},[loadOrders,loadOrder,selected]);
 
  useEffect(()=>{
+  let active=true;
   Promise.all([supabase.auth.getSession(),loadServices(),supabase.from("parametres_marque").select("nom_marque,slogan,chemin_logo").limit(1).maybeSingle()])
    .then(([auth,_services,b])=>{if(!active)return;setSession(auth.data.session);if(b.data)setBrand(b.data as Brand);setLoading(false)})
    .catch(e=>{if(active){setNotice(e instanceof Error?e.message:"Connexion temporairement indisponible.");setLoading(false)}});
