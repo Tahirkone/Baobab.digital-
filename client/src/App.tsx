@@ -80,7 +80,6 @@ export default function App(){
   return()=>{active=false;data.subscription.unsubscribe()};
  },[loadServices]);
  useEffect(()=>{
-  let active=true;
   const iconUrl=supabase.storage.from("baobab-assets").getPublicUrl("brand/app-icon.png").data.publicUrl+"?v="+Date.now();
   const appleIcon=document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]')??document.createElement("link");
   appleIcon.rel="apple-touch-icon";
