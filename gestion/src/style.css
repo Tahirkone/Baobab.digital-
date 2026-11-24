@@ -1033,3 +1033,99 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
   .quick-grid { grid-template-columns: 1fr; }
   .quick-tile { min-height: 70px; flex-direction: row; justify-content: flex-start; text-align: left; }
 }
+
+
+/* BAOBAB DIGITAL GESTION — interface sobre et cohérente */
+:root {
+  --green: #174B3A;
+  --green-dark: #103729;
+  --green-light: #EAF1ED;
+  --gold: #C7A45A;
+  --gold-soft: #F7F2E7;
+  --orange: #174B3A;
+  --orange-deep: #103729;
+  --orange-soft: #EAF1ED;
+  --blue: #496B82;
+  --bg: #F5F7F6;
+  --white: #FFFFFF;
+  --ink: #202B26;
+  --muted: #6D7973;
+  --line: #E3E9E5;
+  --shadow: 0 3px 14px rgba(25, 45, 35, .045);
+}
+body, .admin-layout, .main-area { background: var(--bg); color: var(--ink); }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid rgba(23, 75, 58, .22); outline-offset: 2px;
+}
+.login-page { background: linear-gradient(145deg, #174B3A, #103729); }
+.login-card { border: 1px solid var(--line); border-top: 3px solid var(--gold); border-radius: 20px; box-shadow: 0 18px 48px rgba(10, 35, 25, .18); }
+.login-logo { background: #F7F8F6; }
+.login-card h1 { color: var(--green); }
+.login-card .subtitle { color: #8A7446; }
+.sidebar { background: #173F32; box-shadow: 5px 0 22px rgba(16, 38, 29, .12); }
+.sidebar-brand { border-bottom-color: rgba(255,255,255,.13); }
+.brand-logo { border-bottom: 2px solid var(--gold); }
+.brand-name span, .nav-icon { color: #D7C18F; }
+.nav-item { color: #E4EBE7; }
+.nav-item-orders .nav-icon, .nav-item-messages .nav-icon, .nav-item-clients .nav-icon,
+.nav-item-services .nav-icon, .nav-item-payments .nav-icon, .nav-item-expenses .nav-icon,
+.nav-item-settings .nav-icon { color: #D7C18F; }
+.nav-item.active { background: rgba(255,255,255,.13); color: #FFFFFF; box-shadow: inset 3px 0 0 var(--gold); }
+.nav-item.active .nav-icon { color: #FFFFFF; }
+.topbar { background: rgba(255,255,255,.97); border-bottom: 1px solid var(--line); box-shadow: none; }
+.topbar-title h1, .section-heading, .card-title, .section-placeholder h2,
+.stat-text strong, .watch-item strong, .sub-title { color: var(--green); }
+.menu-toggle { background: var(--green); color: #FFFFFF; box-shadow: none; }
+.refresh-button { border-color: var(--line); color: var(--green); }
+.dashboard-content { max-width: 1500px; }
+.notice { border: 1px solid #E9E2D2; border-left: 3px solid var(--gold); background: #FBF9F4; color: #665638; box-shadow: none; }
+.welcome-card { min-height: 150px; border: 1px solid #E4EAE6; border-bottom: 3px solid var(--gold); border-radius: 18px; background: linear-gradient(115deg, #174B3A, #123D2F); box-shadow: 0 5px 18px rgba(20,55,40,.08); }
+.welcome-tag { border-color: rgba(215,193,143,.5); background: rgba(255,255,255,.08); color: #E6D6B3; }
+.welcome-card h2 { font-size: 1.55rem; }
+.welcome-card p { color: #DCE6E0; }
+.welcome-badge { border: 2px solid rgba(255,255,255,.7); box-shadow: none; }
+.quick-tile { border-color: var(--line); color: var(--ink); box-shadow: 0 2px 10px rgba(25,45,35,.035); }
+.quick-tile:hover { border-color: #C9D7CF; box-shadow: 0 5px 15px rgba(25,45,35,.06); }
+.quick-icon, .quick-icon-orders, .quick-icon-payments, .quick-icon-expenses, .quick-icon-services {
+  background: var(--green-light); color: var(--green); border: 0; box-shadow: none;
+}
+.finance-card { min-height: 130px; border: 1px solid var(--line); border-top: 2px solid #9AAFA3; border-radius: 15px; background: #FFFFFF; box-shadow: 0 2px 10px rgba(25,45,35,.035); }
+.finance-in, .finance-out { background: #FFFFFF; border-top-color: #9AAFA3; }
+.finance-out strong, .finance-in strong { color: var(--ink); }
+.finance-balance { border-top-color: var(--gold); background: #174B3A; }
+.finance-icon, .finance-icon-revenue, .finance-icon-expenses { background: var(--green-light); color: var(--green); }
+.finance-icon-balance { background: rgba(255,255,255,.12); color: #E6D6B3; }
+.finance-chart-card, .card, .stat-card { border-color: var(--line); box-shadow: 0 2px 12px rgba(25,45,35,.035); }
+.card { border-radius: 15px; }
+.stat-icon, .stat-card:nth-child(1) .stat-icon, .stat-card:nth-child(2) .stat-icon,
+.stat-card:nth-child(3) .stat-icon, .stat-card:nth-child(4) .stat-icon {
+  background: var(--green-light); color: var(--green);
+}
+.watch-item, .watch-item:nth-child(2n) { border-left: 3px solid var(--gold); background: #F8F8F5; }
+.orders-search, .inbox-search { border-color: var(--line); }
+.orders-search:focus-within, .inbox-search:focus-within { border-color: #9CB5A7; box-shadow: 0 0 0 2px var(--green-light); }
+.section-placeholder { border-color: #D8E2DC; background: #FFFFFF; }
+.placeholder-icon { background: var(--green-light); color: var(--green); box-shadow: none; }
+.order-item.selected { border-color: #AFC3B7; background: #F2F6F3; }
+.input { border-color: var(--line); background: #FAFBFA; }
+.input:focus { outline: 2px solid rgba(23,75,58,.15); border-color: #8FA99A; }
+.checkbox-row input { accent-color: var(--green); }
+.btn-primary { background: var(--green); color: #FFFFFF; box-shadow: none; }
+.btn-primary:hover { background: var(--green-dark); }
+.btn-secondary { border-color: var(--line); color: var(--green); }
+.btn-success { background: #EEF4F0; color: #35644B; border-color: #D5E3DA; }
+.btn-danger { background: #FBF0EF; color: #9B4841; border-color: #EBD5D2; }
+.summary-card { background: #174B3A; }
+.summary-gold { background: var(--gold-soft); }
+.summary-gold h2 { color: #78633D; }
+.data-table th { color: var(--green); border-bottom-color: #D8C79F; }
+.inbox-total { background: var(--green-light); color: var(--green); }
+.inbox-contact.active { background: #F0F5F1; }
+.inbox-avatar { background: var(--green); color: #FFFFFF; }
+.inbox-thread-body { background: #F5F7F6; }
+.admin-chat-message.admin { background: #EAF1ED; }
+.logo-preview img { border-color: var(--line); }
+@media (max-width: 699px) {
+  .welcome-card { min-height: 125px; }
+  .welcome-card h2 { font-size: 1.3rem; }
+}
