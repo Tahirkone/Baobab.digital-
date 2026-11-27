@@ -42,8 +42,26 @@ jobs:
       - name: Install dependencies
         working-directory: ${{ matrix.app }}
         run: npm install --no-audit --no-fund
-      - name: Build web application
-        working-directory: ${{ matrix.app }}
+      - name: Check CYBER CLIENT Supabase configuration
+        if: matrix.app == 'client'
+        working-directory: client
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          if [[ -z "$VITE_SUPABASE_URL" || -z "$VITE_SUPABASE_ANON_KEY" ]]; then
+            echo "::warning::Supabase GitHub Actions secrets are not fully configured; the CLIENT APK may not connect to the live database."
+          fi
+      - name: Build CYBER CLIENT web application
+        if: matrix.app == 'client'
+        working-directory: client
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: npm run build
+      - name: Build GESTION web application
+        if: matrix.app == 'gestion'
+        working-directory: gestion
         run: npm run build
       - name: Generate Android project
         working-directory: ${{ matrix.app }}
