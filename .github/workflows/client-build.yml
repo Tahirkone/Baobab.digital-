@@ -1,4 +1,4 @@
-name: Build BAOBAB DIGITAL CLIENT
+name: Build CYBER CLIENT
 on:
   pull_request:
     paths:
