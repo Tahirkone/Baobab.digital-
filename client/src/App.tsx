@@ -107,6 +107,22 @@ export default function App(){
   };
  },[brand.nom_marque,brand.chemin_logo]);
  useEffect(()=>{let active=true;supabase.from("suguma_client_appearance").select("*").eq("id",1).maybeSingle().then(({data,error})=>{if(!active)return;if(data)setAppearance({...defaultAppearance,...data} as Appearance);if(error)console.warn("Réglages CYBER CLIENT indisponibles",error.message)});return()=>{active=false}},[]);
+ useEffect(()=>{
+  const channel=supabase.channel("cyber-public-catalog-settings")
+   .on("postgres_changes",{event:"*",schema:"public",table:"services"},()=>{loadServices().catch(e=>setNotice(e instanceof Error?e.message:"Catalogue temporairement indisponible."))})
+   .on("postgres_changes",{event:"*",schema:"public",table:"parametres_marque"},async()=>{
+    const {data,error}=await supabase.from("parametres_marque").select("nom_marque,slogan,chemin_logo").limit(1).maybeSingle();
+    if(error){setNotice("Impossible d’actualiser les informations de CYBER.");return}
+    if(data)setBrand(data as Brand);
+   })
+   .on("postgres_changes",{event:"*",schema:"public",table:"suguma_client_appearance"},async()=>{
+    const {data,error}=await supabase.from("suguma_client_appearance").select("*").eq("id",1).maybeSingle();
+    if(error){setNotice("Impossible d’actualiser l’apparence de CYBER.");return}
+    setAppearance(data?{...defaultAppearance,...data} as Appearance:defaultAppearance);
+   })
+   .subscribe();
+  return()=>{void supabase.removeChannel(channel)};
+ },[loadServices]);
  useEffect(()=>{if(session){setProfileName(String(session.user.user_metadata.full_name||""));setProfilePhone(String(session.user.user_metadata.phone||""));loadOrders().catch(e=>setNotice(e instanceof Error?e.message:"Impossible de charger les commandes."))}},[session,loadOrders]);
  useEffect(()=>{if(!session)return;const channel=supabase.channel("client-notifications-"+session.user.id)
   .on("postgres_changes",{event:"INSERT",schema:"public",table:"messages"},payload=>{const row=payload.new as Message;if(row.expediteur==="admin"){browserNotify("Nouveau message de CYBER",row.contenu||"Tu as reçu un nouveau message.");setNotice("Nouveau message reçu de CYBER.");if(selected?.id)loadOrder(selected).catch(()=>{})}})
